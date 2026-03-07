@@ -65,7 +65,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     initTelegramWebApp();
-    const tgId = getTelegramUserId() ?? TEST_TELEGRAM_ID;
+    const tgId = getTelegramUserId();
     setTelegramId(tgId);
   }, []);
 
