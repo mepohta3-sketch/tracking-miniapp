@@ -65,7 +65,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     initTelegramWebApp();
-    const tgId = getTelegramUserId();
+    const tgId = getTelegramUserId() ?? TEST_TELEGRAM_ID;
     setTelegramId(tgId);
   }, []);
 
@@ -230,6 +230,76 @@ export default function OrderPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+<div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/45">
+                Номер заказа
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold">
+                {order.order_number}
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+              {getStatusLabel(order.status)}
+            </span>
+          </div>
+
+          <div className="space-y-3 text-sm text-white/75">
+            <p>
+              <span className="text-white">Товар:</span> {order.product_name}
+            </p>
+            <p>
+              <span className="text-white">Размер:</span> {order.size || "—"}
+            </p>
+            <p>
+              <span className="text-white">Комментарий:</span>{" "}
+              {order.comment || "—"}
+            </p>
+            <p>
+              <span className="text-white">Обновлено:</span>{" "}
+              {new Date(order.updated_at).toLocaleDateString("ru-RU")}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <h3 className="mb-4 text-lg font-semibold">История заказа</h3>
+
+          <div className="space-y-3">
+            {events.length > 0 ? (
+              events.map((event, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                >
+                  <p className="text-sm font-medium">
+                    {getStatusLabel(event.status)}
+                  </p>
+
+                  <p className="mt-1 text-xs text-white/50">
+                    {new Date(event.created_at).toLocaleString("ru-RU")}
+                  </p>
+
+                  {event.comment && (
+                    <p className="mt-2 text-sm text-white/70">
+                      {event.comment}
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                История этапов пока пуста.
+              </div>
+            )}
           </div>
         </div>
       </div>
