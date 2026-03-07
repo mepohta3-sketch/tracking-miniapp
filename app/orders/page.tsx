@@ -1,4 +1,12 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  getTelegramUserId,
+  initTelegramWebApp,
+  TEST_TELEGRAM_ID,
+} from "@/lib/telegram";
 
 type Order = {
   id: string;
@@ -8,6 +16,7 @@ type Order = {
   status: string;
   comment: string | null;
   updated_at: string;
+  telegram_id: number;
 };
 
 function getStatusLabel(status: string) {
@@ -27,11 +36,45 @@ function getStatusLabel(status: string) {
   }
 }
 
-export default async function OrdersPage() {
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select("id, order_number, product_name, size, status, comment, updated_at")
-    .order("updated_at", { ascending: false });
+export default function OrdersPage() {
+  const [telegramId, setTelegramId] = useState<number | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    initTelegramWebApp();
+    const tgId = getTelegramUserId() ?? TEST_TELEGRAM_ID;
+    setTelegramId(tgId);
+  }, []);
+
+  useEffect(() => {
+    if (telegramId === null) return;
+
+    async function loadOrders() {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select(
+          "id, order_number, product_name, size, status, comment, updated_at, telegram_id"
+        )
+        .eq("telegram_id", telegramId)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        setError(error.message);
+        setOrders([]);
+      } else {
+        setOrders((data as Order[]) || []);
+      }
+
+      setLoading(false);
+    }
+
+    loadOrders();
+  }, [telegramId]);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -42,6 +85,9 @@ export default async function OrdersPage() {
               TRACKING
             </p>
             <h1 className="mt-2 text-3xl font-bold">Мои заказы</h1>
+            <p className="mt-2 text-xs text-white/45">
+              Telegram ID: {telegramId ?? "загрузка..."}
+            </p>
           </div>
 
           <a
@@ -52,20 +98,26 @@ export default async function OrdersPage() {
           </a>
         </div>
 
-        {error && (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
-            Ошибка загрузки заказов: {error.message}
+        {loading && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+            Загрузка заказов...
           </div>
         )}
 
-        {!error && (!orders || orders.length === 0) && (
+        {!loading && error && (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+            Ошибка загрузки заказов: {error}
+          </div>
+        )}
+
+        {!loading && !error && orders.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
             Заказов пока нет.
           </div>
         )}
 
         <div className="space-y-4">
-          {orders?.map((order: Order) => (
+          {orders.map((order) => (
             <div
               key={order.id}
               className="rounded-3xl border border-white/10 bg-white/5 p-5"
@@ -84,8 +136,7 @@ export default async function OrdersPage() {
                   {getStatusLabel(order.status)}
                 </span>
               </div>
-
-              <div className="space-y-2 text-sm text-white/75">
+<div className="space-y-2 text-sm text-white/75">
                 <p>
                   <span className="text-white">Товар:</span> {order.product_name}
                 </p>
@@ -93,7 +144,8 @@ export default async function OrdersPage() {
                   <span className="text-white">Размер:</span> {order.size || "—"}
                 </p>
                 <p>
-                  <span className="text-white">Комментарий:</span> {order.comment || "—"}
+                  <span className="text-white">Комментарий:</span>{" "}
+                  {order.comment || "—"}
                 </p>
                 <p>
                   <span className="text-white">Обновлено:</span>{" "}

@@ -1,4 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+  getTelegramUserId,
+  initTelegramWebApp,
+  TEST_TELEGRAM_ID,
+} from "@/lib/telegram";
+
+type Order = {
+  id: string;
+  order_number: string;
+  product_name: string;
+  size: string | null;
+  status: string;
+  comment: string | null;
+  updated_at: string;
+  telegram_id: number;
+};
 
 function getStatusLabel(status: string) {
   switch (status) {
@@ -34,18 +54,61 @@ function getStatusStep(status: string) {
   }
 }
 
-export default async function OrderPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export default function OrderPage() {
+  const params = useParams() as { id?: string };
+  const orderId = params.id;
 
-  const { data: order, error } = await supabase
-    .from("orders")
-    .select("id, order_number, product_name, size, status, comment, updated_at")
-    .eq("id", id)
-    .single();
+  const [telegramId, setTelegramId] = useState<number | null>(null);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    initTelegramWebApp();
+    const tgId = getTelegramUserId() ?? TEST_TELEGRAM_ID;
+    setTelegramId(tgId);
+  }, []);
+
+  useEffect(() => {
+    if (!orderId || telegramId === null) return;
+
+    async function loadOrder() {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select(
+          "id, order_number, product_name, size, status, comment, updated_at, telegram_id"
+        )
+        .eq("id", orderId)
+        .eq("telegram_id", telegramId)
+        .single();
+
+      if (error) {
+        setError(error.message);
+        setOrder(null);
+      } else {
+        setOrder(data as Order);
+      }
+
+      setLoading(false);
+    }
+
+    loadOrder();
+  }, [orderId, telegramId]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-neutral-950 text-white">
+        <div className="mx-auto max-w-md px-5 py-6">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-white/70">
+            Загрузка заказа...
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (error || !order) {
     return (
@@ -85,6 +148,9 @@ export default async function OrderPage({
               TRACKING
             </p>
             <h1 className="mt-2 text-3xl font-bold">Заказ</h1>
+            <p className="mt-2 text-xs text-white/45">
+              Telegram ID: {telegramId}
+            </p>
           </div>
 
           <a
@@ -94,8 +160,7 @@ export default async function OrderPage({
             Назад
           </a>
         </div>
-
-        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5">
+<div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-white/45">
@@ -119,7 +184,8 @@ export default async function OrderPage({
               <span className="text-white">Размер:</span> {order.size || "—"}
             </p>
             <p>
-              <span className="text-white">Комментарий:</span> {order.comment || "—"}
+              <span className="text-white">Комментарий:</span>{" "}
+              {order.comment || "—"}
             </p>
             <p>
               <span className="text-white">Обновлено:</span>{" "}
@@ -136,7 +202,8 @@ export default async function OrderPage({
               const stepNumber = index + 1;
               const isDone = stepNumber <= currentStep;
               const isCurrent = stepNumber === currentStep;
-const cardClass = isDone
+
+              const cardClass = isDone
                 ? "rounded-2xl border p-4 border-emerald-400/30 bg-emerald-400/10"
                 : "rounded-2xl border p-4 border-white/10 bg-white/5";
 
