@@ -10,6 +10,23 @@ type Order = {
   updated_at: string;
 };
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "created":
+      return "Заказ создан";
+    case "bought_out":
+      return "Товар выкуплен";
+    case "to_china_warehouse":
+      return "В пути на склад в Китае";
+    case "to_novosibirsk":
+      return "В пути к нам в Новосибирск";
+    case "delivered":
+      return "Доставлен";
+    default:
+      return status;
+  }
+}
+
 export default async function OrdersPage() {
   const { data: orders, error } = await supabase
     .from("orders")
@@ -64,7 +81,7 @@ export default async function OrdersPage() {
                 </div>
 
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                  {order.status}
+                  {getStatusLabel(order.status)}
                 </span>
               </div>
 
@@ -83,6 +100,13 @@ export default async function OrdersPage() {
                   {new Date(order.updated_at).toLocaleDateString("ru-RU")}
                 </p>
               </div>
+
+              <a
+                href={`/orders/${order.id}`}
+                className="mt-4 inline-block rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black"
+              >
+                Открыть
+              </a>
             </div>
           ))}
         </div>
