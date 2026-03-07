@@ -19,9 +19,12 @@ export default function HomePage() {
           </p>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <button className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black">
-              Мои заказы
-            </button>
+            <a
+  href="/orders"
+  className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-black"
+>
+  Мои заказы
+</a>
 
             <button className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white">
               Поддержка
