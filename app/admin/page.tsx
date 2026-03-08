@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 type Order = {
   id: string;
   order_number: string;
+  access_code: string;
   client_name: string | null;
-  telegram_id: number;
   product_name: string;
   size: string | null;
   status: string;
@@ -29,12 +29,21 @@ function getStatusLabel(status: string) {
 export default function AdminPage() {
   const [secret, setSecret] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrderNumber, setSelectedOrderNumber] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState("");
   const [status, setStatus] = useState("created");
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [newOrderNumber, setNewOrderNumber] = useState("");
+  const [newClientName, setNewClientName] = useState("");
+  const [newProductName, setNewProductName] = useState("");
+  const [newSize, setNewSize] = useState("");
+  const [newStatus, setNewStatus] = useState("created");
+  const [newComment, setNewComment] = useState("");
+  const [newAccessCode, setNewAccessCode] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_secret");
@@ -44,19 +53,19 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const selected = orders.find((order) => order.order_number === selectedOrderNumber);
+    const selected = orders.find((order) => order.id === selectedOrderId);
     if (selected) {
       setStatus(selected.status);
       setComment(selected.comment || "");
     }
-  }, [selectedOrderNumber, orders]);
+  }, [selectedOrderId, orders]);
 
-  async function loadOrders(secretOverride?: string) {
+  async function loadOrders(secretOverride?: string): Promise<Order[] | null> {
     const finalSecret = (secretOverride || secret).trim();
 
     if (!finalSecret) {
       setMessage("Введи ADMIN_SECRET");
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -75,17 +84,18 @@ export default function AdminPage() {
       setMessage(data.error || "Ошибка загрузки");
       setOrders([]);
       setLoading(false);
-      return;
+      return null;
     }
 
     const loadedOrders: Order[] = data.orders || [];
     setOrders(loadedOrders);
 
-    if (!selectedOrderNumber && loadedOrders.length > 0) {
-      setSelectedOrderNumber(loadedOrders[0].order_number);
+    if (!selectedOrderId && loadedOrders.length > 0) {
+      setSelectedOrderId(loadedOrders[0].id);
     }
 
     setLoading(false);
+    return loadedOrders;
   }
 
   async function connect() {
@@ -97,7 +107,7 @@ export default function AdminPage() {
   async function saveOrder() {
     const finalSecret = secret.trim();
 
-    if (!selectedOrderNumber) {
+    if (!selectedOrderId) {
       setMessage("Выбери заказ");
       return;
     }
@@ -117,7 +127,7 @@ export default function AdminPage() {
         "x-admin-secret": finalSecret,
       },
       body: JSON.stringify({
-        orderNumber: selectedOrderNumber,
+        orderId: selectedOrderId,
         status,
         comment,
       }),
@@ -136,9 +146,81 @@ export default function AdminPage() {
     await loadOrders(finalSecret);
   }
 
+  async function createOrder() {
+    const finalSecret = secret.trim();
+
+    if (!finalSecret) {
+      setMessage("Введи ADMIN_SECRET");
+      return;
+    }
+
+    if (!newOrderNumber.trim()) {
+      setMessage("Введи номер заказа");
+      return;
+    }
+
+    if (!newProductName.trim()) {
+      setMessage("Введи название товара");
+      return;
+    }
+
+    setCreating(true);
+    setMessage("");
+
+    const res = await fetch("/api/admin/orders/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": finalSecret,
+      },
+      body: JSON.stringify({
+        orderNumber: newOrderNumber.trim(),
+        clientName: newClientName.trim(),
+        productName: newProductName.trim(),
+        size: newSize.trim(),
+        status: newStatus,
+        comment: newComment.trim(),
+        accessCode: newAccessCode.trim(),
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Ошибка создания заказа");
+      setCreating(false);
+      return;
+    }
+
+    const createdCode = data?.result?.access_code || "—";
+    const createdNumber = data?.result?.order_number || newOrderNumber.trim();
+
+    setMessage(`Заказ создан: ${createdNumber}. Код: ${createdCode}`);
+
+    setNewOrderNumber("");
+    setNewClientName("");
+    setNewProductName("");
+    setNewSize("");
+    setNewStatus("created");
+    setNewComment("");
+    setNewAccessCode("");
+
+    const loadedOrders = await loadOrders(finalSecret);
+    if (loadedOrders && createdNumber) {
+      const created = loadedOrders.find(
+        (order) => order.order_number === createdNumber
+      );
+      if (created) {
+        setSelectedOrderId(created.id);
+      }
+    }
+
+    setCreating(false);
+  }
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
-      <div className="mx-auto max-w-3xl px-5 py-8">
+      <div className="mx-auto max-w-5xl px-5 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">
@@ -181,6 +263,74 @@ export default function AdminPage() {
           </div>
         )}
 
+        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-6">
+          <h2 className="mb-6 text-2xl font-bold">Создать заказ</h2>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <input
+              value={newOrderNumber}
+              onChange={(e) => setNewOrderNumber(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+              placeholder="Номер заказа, например KAI-2003"
+            />
+
+            <input
+              value={newAccessCode}
+              onChange={(e) => setNewAccessCode(e.target.value.toUpperCase())}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none uppercase"
+              placeholder="Код доступа (если пусто — создастся сам)"
+            />
+
+            <input
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+              placeholder="Имя клиента"
+            />
+
+            <input
+              value={newProductName}
+              onChange={(e) => setNewProductName(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+              placeholder="Товар"
+            />
+
+            <input
+              value={newSize}
+              onChange={(e) => setNewSize(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+              placeholder="Размер"
+            />
+
+            <select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+            >
+              {statusOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="mt-4 min-h-[120px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+            placeholder="Комментарий к новому заказу"
+          />
+
+          <button
+            onClick={createOrder}
+            disabled={creating}
+            className="mt-4 w-full rounded-2xl bg-emerald-400 px-4 py-4 text-lg font-semibold text-black disabled:opacity-60"
+          >
+            {creating ? "Создаю..." : "Создать заказ"}
+          </button>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="mb-4 flex items-center justify-between">
@@ -201,15 +351,18 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {orders.map((order) => (
                   <button
-                    key={order.order_number}
-                    onClick={() => setSelectedOrderNumber(order.order_number)}
+                    key={order.id}
+                    onClick={() => setSelectedOrderId(order.id)}
                     className={`w-full rounded-2xl border p-4 text-left ${
-                      selectedOrderNumber === order.order_number
+                      selectedOrderId === order.id
                         ? "border-emerald-400/30 bg-emerald-400/10"
                         : "border-white/10 bg-white/5"
                     }`}
                   >
                     <p className="text-xl font-bold">{order.order_number}</p>
+                    <p className="mt-1 text-xs text-white/45">
+                      Код: {order.access_code}
+                    </p>
                     <p className="mt-2 text-sm text-white/70">{order.product_name}</p>
                     <p className="mt-1 text-sm text-white/55">
                       {getStatusLabel(order.status)}
@@ -223,40 +376,51 @@ export default function AdminPage() {
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <h2 className="mb-6 text-2xl font-bold">Редактирование</h2>
 
-            <div className="space-y-5">
-              <div>
-                <p className="mb-2 text-sm text-white/70">Статус</p>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-                >
-                  {statusOptions.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {selectedOrderId ? (
+              <>
+                <p className="mb-3 text-sm text-white/60">
+                  Код текущего заказа:{" "}
+                  {orders.find((order) => order.id === selectedOrderId)?.access_code || "—"}
+                </p>
 
-              <div>
-                <p className="mb-2 text-sm text-white/70">Комментарий</p>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-                  placeholder="Новый комментарий"
-                />
-              </div>
+                <div className="space-y-5">
+                  <div>
+                    <p className="mb-2 text-sm text-white/70">Статус</p>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+                    >
+                      {statusOptions.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <button
-                onClick={saveOrder}
-                disabled={saving}
-                className="w-full rounded-2xl bg-white px-4 py-4 text-lg font-semibold text-black disabled:opacity-60"
-              >
-                {saving ? "Сохраняю..." : "Сохранить и добавить этап"}
-              </button>
-            </div>
+                  <div>
+                    <p className="mb-2 text-sm text-white/70">Комментарий</p>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
+                      placeholder="Новый комментарий"
+                    />
+                  </div>
+
+                  <button
+                    onClick={saveOrder}
+                    disabled={saving}
+                    className="w-full rounded-2xl bg-white px-4 py-4 text-lg font-semibold text-black disabled:opacity-60"
+                  >
+                    {saving ? "Сохраняю..." : "Сохранить и добавить этап"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-white/60">Выбери заказ слева.</p>
+            )}
           </div>
         </div>
       </div>

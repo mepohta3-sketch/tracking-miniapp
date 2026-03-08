@@ -34,34 +34,6 @@ function getAdminClient() {
   });
 }
 
-export async function GET(req: NextRequest) {
-  try {
-    if (!isAuthorized(req)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const supabaseAdmin = getAdminClient();
-
-    const { data, error } = await supabaseAdmin
-      .from("orders")
-      .select(
-        "id, order_number, access_code, client_name, telegram_id, product_name, size, status, comment, updated_at"
-      )
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ orders: data || [] });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Server error" },
-      { status: 500 }
-    );
-  }
-}
-
 export async function POST(req: NextRequest) {
   try {
     if (!isAuthorized(req)) {
@@ -70,8 +42,23 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    const orderId = String(body.orderId || "").trim();
-    const status = String(body.status || "").trim();
+    const orderNumber = String(body.orderNumber || "").trim();
+    const clientName =
+      body.clientName === null ||
+      body.clientName === undefined ||
+      body.clientName === ""
+        ? null
+        : String(body.clientName);
+
+    const productName = String(body.productName || "").trim();
+    const size =
+      body.size === null ||
+      body.size === undefined ||
+      body.size === ""
+        ? null
+        : String(body.size);
+
+    const status = String(body.status || "created").trim();
     const comment =
       body.comment === null ||
       body.comment === undefined ||
@@ -79,8 +66,19 @@ export async function POST(req: NextRequest) {
         ? null
         : String(body.comment);
 
-    if (!orderId) {
-      return NextResponse.json({ error: "orderId is required" }, { status: 400 });
+    const accessCode =
+      body.accessCode === null ||
+      body.accessCode === undefined ||
+      body.accessCode === ""
+        ? null
+        : String(body.accessCode);
+
+    if (!orderNumber) {
+      return NextResponse.json({ error: "orderNumber is required" }, { status: 400 });
+    }
+
+    if (!productName) {
+      return NextResponse.json({ error: "productName is required" }, { status: 400 });
     }
 
     if (!isValidStatus(status)) {
@@ -89,10 +87,14 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = getAdminClient();
 
-    const { data, error } = await supabaseAdmin.rpc("admin_update_order_by_id", {
-      p_order_id: orderId,
+    const { data, error } = await supabaseAdmin.rpc("admin_create_order", {
+      p_order_number: orderNumber,
+      p_client_name: clientName,
+      p_product_name: productName,
+      p_size: size,
       p_status: status,
       p_comment: comment,
+      p_access_code: accessCode,
     });
 
     if (error) {
