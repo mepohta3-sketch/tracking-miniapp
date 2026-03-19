@@ -2,6 +2,12 @@
 
 import { useState } from "react"
 
+declare global {
+  interface Window {
+    Telegram?: any
+  }
+}
+
 const statusMap: Record<string, string> = {
   created: "Заказ оформлен",
   bought_out: "Товар выкуплен",
@@ -45,10 +51,11 @@ export default function Home() {
   const [events, setEvents] = useState<any[]>([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [bindMessage, setBindMessage] = useState("")
 
   async function searchOrder() {
     const trimmedOrderNumber = orderNumber.trim()
-    const trimmedAccessCode = accessCode.trim()
+    const trimmedAccessCode = accessCode.trim().toUpperCase()
 
     if (!trimmedOrderNumber || !trimmedAccessCode) {
       setError("Введи номер заказа и код доступа")
@@ -59,6 +66,7 @@ export default function Home() {
 
     setLoading(true)
     setError("")
+    setBindMessage("")
     setOrder(null)
     setEvents([])
 
@@ -96,6 +104,44 @@ export default function Home() {
       setError("Ошибка загрузки заказа")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function bindNotifications() {
+    if (!order) {
+      return
+    }
+
+    const tg = window.Telegram?.WebApp
+
+    if (!tg?.initData) {
+      setBindMessage("Открой Mini App через Telegram-бота")
+      return
+    }
+
+    try {
+      const res = await fetch("/api/bind-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderNumber: order.order_number,
+          accessCode,
+          initData: tg.initData,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setBindMessage(data.error || "Не удалось подключить уведомления")
+        return
+      }
+
+      setBindMessage("Уведомления подключены ✅")
+    } catch {
+      setBindMessage("Не удалось подключить уведомления")
     }
   }
 
@@ -321,7 +367,7 @@ export default function Home() {
               style={{
                 display: "grid",
                 gap: "10px",
-                marginBottom: "24px",
+                marginBottom: "20px",
               }}
             >
               {order.client_name && (
@@ -346,6 +392,37 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            <button
+              onClick={bindNotifications}
+              style={{
+                width: "100%",
+                padding: "16px",
+                borderRadius: "18px",
+                border: "none",
+                background: "#13e7a1",
+                color: "#000000",
+                fontWeight: 700,
+                fontSize: "17px",
+                cursor: "pointer",
+                marginBottom: "14px",
+              }}
+            >
+              Подключить уведомления
+            </button>
+
+            {bindMessage && (
+              <div
+                style={{
+                  color: "#5dffba",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  marginBottom: "20px",
+                }}
+              >
+                {bindMessage}
+              </div>
+            )}
 
             <div
               style={{

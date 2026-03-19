@@ -10,6 +10,44 @@ function checkSecret(req: Request) {
   return req.headers.get("x-admin-secret") === process.env.ADMIN_SECRET;
 }
 
+const statusMap: Record<string, string> = {
+  created: "Заказ оформлен",
+  bought_out: "Товар выкуплен",
+  to_china_warehouse: "На складе в Китае",
+  to_novosibirsk: "Едет в Новосибирск",
+  delivered: "Доставлен",
+};
+
+async function sendTelegramNotification(
+  telegramId: number,
+  orderNumber: string,
+  status: string,
+  comment: string | null
+) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+  if (!botToken || !telegramId) {
+    return;
+  }
+
+  const text =
+    `Ваш заказ ${orderNumber} обновлён\n\n` +
+    `Новый статус: ${statusMap[status] || status}\n` +
+    `${comment ? `Комментарий: ${comment}\n\n` : `\n`}` +
+    `Откройте Mini App, чтобы посмотреть историю заказа.`;
+
+  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: telegramId,
+      text,
+    }),
+  });
+}
+
 export async function GET(req: Request) {
   if (!checkSecret(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -71,19 +109,35 @@ export async function POST(req: Request) {
         ? null
         : String(body.comment).trim();
 
+    const accessCode =
+      body.accessCode === undefined || body.accessCode === null || String(body.accessCode).trim() === ""
+        ? null
+        : String(body.accessCode).trim().toUpperCase();
+
     if (!orderId || !status) {
       return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
 
-    const { data: order, error: orderError } = await supabase
+    const { data: currentOrder, error: currentError } = await supabase
       .from("orders")
-      .select("id")
+      .select("*")
       .eq("id", orderId)
       .single();
 
-    if (orderError || !order) {
-      console.error("order load error:", orderError);
+    if (currentError || !currentOrder) {
+      console.error("current order load error:", currentError);
       return NextResponse.json({ error: "order not found" }, { status: 404 });
+    }
+
+    if (accessCode) {
+      const { error: codeError } = await supabase
+        .from("orders")
+        .update({ access_code: accessCode })
+        .eq("id", orderId);
+
+      if (codeError) {
+        return NextResponse.json({ error: codeError.message }, { status: 500 });
+      }
     }
 
     const { error: insertError } = await supabase
@@ -97,6 +151,15 @@ export async function POST(req: Request) {
     if (insertError) {
       console.error("insert event error:", insertError);
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+
+    if (currentOrder.telegram_id) {
+      await sendTelegramNotification(
+        currentOrder.telegram_id,
+        currentOrder.order_number,
+        status,
+        comment
+      );
     }
 
     return NextResponse.json({ ok: true });
