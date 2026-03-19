@@ -1,108 +1,109 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const allowedStatuses = [
-  "created",
-  "bought_out",
-  "to_china_warehouse",
-  "to_novosibirsk",
-  "delivered",
-] as const;
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-function isAuthorized(req: NextRequest) {
-  const secret = req.headers.get("x-admin-secret");
-  return !!process.env.ADMIN_SECRET && secret === process.env.ADMIN_SECRET;
+function checkSecret(req: Request) {
+  return req.headers.get("x-admin-secret") === process.env.ADMIN_SECRET;
 }
 
-function isValidStatus(value: string) {
-  return allowedStatuses.includes(value as (typeof allowedStatuses)[number]);
-}
-
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+export async function GET(req: Request) {
+  if (!checkSecret(req)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("*")
+    .order("order_number", { ascending: true });
+
+  if (ordersError) {
+    console.error("GET orders error:", ordersError);
+    return NextResponse.json({ error: ordersError.message }, { status: 500 });
+  }
+
+  const { data: events, error: eventsError } = await supabase
+    .from("order_events")
+    .select("order_id,status,comment,created_at")
+    .order("created_at", { ascending: false });
+
+  if (eventsError) {
+    console.error("GET order_events error:", eventsError);
+    return NextResponse.json({ error: eventsError.message }, { status: 500 });
+  }
+
+  const latestByOrderId = new Map<string, any>();
+
+  for (const event of events || []) {
+    if (!latestByOrderId.has(event.order_id)) {
+      latestByOrderId.set(event.order_id, event);
+    }
+  }
+
+  const mergedOrders = (orders || []).map((order) => {
+    const latest = latestByOrderId.get(order.id);
+
+    return {
+      ...order,
+      status: latest?.status ?? order.status,
+      comment: latest?.comment ?? order.comment,
+    };
   });
+
+  return NextResponse.json({ orders: mergedOrders });
 }
 
-export async function GET(req: NextRequest) {
-  try {
-    if (!isAuthorized(req)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const supabaseAdmin = getAdminClient();
-
-    const { data, error } = await supabaseAdmin
-      .from("orders")
-      .select(
-        "id, order_number, access_code, client_name, telegram_id, product_name, size, status, comment, updated_at"
-      )
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ orders: data || [] });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Server error" },
-      { status: 500 }
-    );
+export async function POST(req: Request) {
+  if (!checkSecret(req)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-}
 
-export async function POST(req: NextRequest) {
   try {
-    if (!isAuthorized(req)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await req.json();
 
     const orderId = String(body.orderId || "").trim();
     const status = String(body.status || "").trim();
     const comment =
-      body.comment === null ||
-      body.comment === undefined ||
-      body.comment === ""
+      body.comment === undefined || body.comment === null
         ? null
-        : String(body.comment);
+        : String(body.comment).trim();
 
-    if (!orderId) {
-      return NextResponse.json({ error: "orderId is required" }, { status: 400 });
+    if (!orderId || !status) {
+      return NextResponse.json({ error: "missing fields" }, { status: 400 });
     }
 
-    if (!isValidStatus(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("id", orderId)
+      .single();
+
+    if (orderError || !order) {
+      console.error("order load error:", orderError);
+      return NextResponse.json({ error: "order not found" }, { status: 404 });
     }
 
-    const supabaseAdmin = getAdminClient();
+    const { error: insertError } = await supabase
+      .from("order_events")
+      .insert({
+        order_id: orderId,
+        status,
+        comment,
+      });
 
-    const { data, error } = await supabaseAdmin.rpc("admin_update_order_by_id", {
-      p_order_id: orderId,
-      p_status: status,
-      p_comment: comment,
-    });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertError) {
+      console.error("insert event error:", insertError);
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, result: data });
-  } catch (error) {
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error("POST /api/admin/orders fatal error:", e);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Server error" },
+      { error: e?.message || "server error" },
       { status: 500 }
     );
   }

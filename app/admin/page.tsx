@@ -1,429 +1,572 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react"
 
 type Order = {
-  id: string;
-  order_number: string;
-  access_code: string;
-  client_name: string | null;
-  product_name: string;
-  size: string | null;
-  status: string;
-  comment: string | null;
-  updated_at: string;
-};
+  id: string
+  order_number: string
+  client_name: string | null
+  product_name: string
+  size: string | null
+  status: string
+  comment: string | null
+  access_code: string | null
+}
 
 const statusOptions = [
-  { value: "created", label: "Заказ создан" },
+  { value: "created", label: "Заказ оформлен" },
   { value: "bought_out", label: "Товар выкуплен" },
-  { value: "to_china_warehouse", label: "В пути на склад в Китае" },
-  { value: "to_novosibirsk", label: "В пути к нам в Новосибирск" },
+  { value: "to_china_warehouse", label: "На складе в Китае" },
+  { value: "to_novosibirsk", label: "Едет в Новосибирск" },
   { value: "delivered", label: "Доставлен" },
-];
+]
 
 function getStatusLabel(status: string) {
-  return statusOptions.find((item) => item.value === status)?.label || status;
+  return statusOptions.find((s) => s.value === status)?.label || status
+}
+
+function generateCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
 export default function AdminPage() {
-  const [secret, setSecret] = useState("");
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [status, setStatus] = useState("created");
-  const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [message, setMessage] = useState("");
+  const [secret, setSecret] = useState("")
+  const [orders, setOrders] = useState<Order[]>([])
+  const [message, setMessage] = useState("")
 
-  const [newOrderNumber, setNewOrderNumber] = useState("");
-  const [newClientName, setNewClientName] = useState("");
-  const [newProductName, setNewProductName] = useState("");
-  const [newSize, setNewSize] = useState("");
-  const [newStatus, setNewStatus] = useState("created");
-  const [newComment, setNewComment] = useState("");
-  const [newAccessCode, setNewAccessCode] = useState("");
+  const [newOrderNumber, setNewOrderNumber] = useState("")
+  const [newClientName, setNewClientName] = useState("")
+  const [newProductName, setNewProductName] = useState("")
+  const [newSize, setNewSize] = useState("")
+  const [newComment, setNewComment] = useState("")
+  const [newAccessCode, setNewAccessCode] = useState("")
 
-  useEffect(() => {
-    const saved = localStorage.getItem("admin_secret");
-    if (saved) {
-      setSecret(saved);
-    }
-  }, []);
+  const [selectedOrderId, setSelectedOrderId] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState("created")
+  const [selectedComment, setSelectedComment] = useState("")
+  const [selectedAccessCode, setSelectedAccessCode] = useState("")
 
-  useEffect(() => {
-    const selected = orders.find((order) => order.id === selectedOrderId);
-    if (selected) {
-      setStatus(selected.status);
-      setComment(selected.comment || "");
-    }
-  }, [selectedOrderId, orders]);
+  const [tab, setTab] = useState<"active" | "delivered">("active")
 
-  async function loadOrders(secretOverride?: string): Promise<Order[] | null> {
-    const finalSecret = (secretOverride || secret).trim();
+  async function loadOrders(sec?: string) {
+    const finalSecret = (sec || secret).trim()
 
     if (!finalSecret) {
-      setMessage("Введи ADMIN_SECRET");
-      return null;
+      setMessage("Введи ADMIN_SECRET")
+      return
     }
 
-    setLoading(true);
-    setMessage("");
+    try {
+      const res = await fetch("/api/admin/orders", {
+        headers: {
+          "x-admin-secret": finalSecret,
+        },
+        cache: "no-store",
+      })
 
-    const res = await fetch("/api/admin/orders", {
-      headers: {
-        "x-admin-secret": finalSecret,
-      },
-      cache: "no-store",
-    });
+      const data = await res.json()
 
-    const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Ошибка загрузки заказов")
+        return
+      }
 
-    if (!res.ok) {
-      setMessage(data.error || "Ошибка загрузки");
-      setOrders([]);
-      setLoading(false);
-      return null;
+      setOrders(data.orders || [])
+      setMessage("")
+    } catch {
+      setMessage("Ошибка загрузки заказов")
     }
-
-    const loadedOrders: Order[] = data.orders || [];
-    setOrders(loadedOrders);
-
-    if (!selectedOrderId && loadedOrders.length > 0) {
-      setSelectedOrderId(loadedOrders[0].id);
-    }
-
-    setLoading(false);
-    return loadedOrders;
-  }
-
-  async function connect() {
-    const trimmed = secret.trim();
-    localStorage.setItem("admin_secret", trimmed);
-    await loadOrders(trimmed);
-  }
-
-  async function saveOrder() {
-    const finalSecret = secret.trim();
-
-    if (!selectedOrderId) {
-      setMessage("Выбери заказ");
-      return;
-    }
-
-    if (!finalSecret) {
-      setMessage("Введи ADMIN_SECRET");
-      return;
-    }
-
-    setSaving(true);
-    setMessage("");
-
-    const res = await fetch("/api/admin/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": finalSecret,
-      },
-      body: JSON.stringify({
-        orderId: selectedOrderId,
-        status,
-        comment,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setMessage(data.error || "Ошибка сохранения");
-      setSaving(false);
-      return;
-    }
-
-    setMessage("Заказ обновлён");
-    setSaving(false);
-    await loadOrders(finalSecret);
   }
 
   async function createOrder() {
-    const finalSecret = secret.trim();
+    const finalSecret = secret.trim()
+    const finalCode = (newAccessCode.trim() || generateCode()).toUpperCase()
 
     if (!finalSecret) {
-      setMessage("Введи ADMIN_SECRET");
-      return;
+      setMessage("Введи ADMIN_SECRET")
+      return
     }
 
     if (!newOrderNumber.trim()) {
-      setMessage("Введи номер заказа");
-      return;
+      setMessage("Введи номер заказа")
+      return
     }
 
     if (!newProductName.trim()) {
-      setMessage("Введи название товара");
-      return;
+      setMessage("Введи товар")
+      return
     }
 
-    setCreating(true);
-    setMessage("");
+    try {
+      const res = await fetch("/api/admin/orders/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": finalSecret,
+        },
+        body: JSON.stringify({
+          order_number: newOrderNumber.trim(),
+          client_name: newClientName.trim() || null,
+          telegram_id: null,
+          product_name: newProductName.trim(),
+          size: newSize.trim() || null,
+          status: "created",
+          comment: newComment.trim() || "Заказ оформлен",
+          access_code: finalCode,
+        }),
+      })
 
-    const res = await fetch("/api/admin/orders/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": finalSecret,
-      },
-      body: JSON.stringify({
-        orderNumber: newOrderNumber.trim(),
-        clientName: newClientName.trim(),
-        productName: newProductName.trim(),
-        size: newSize.trim(),
-        status: newStatus,
-        comment: newComment.trim(),
-        accessCode: newAccessCode.trim(),
-      }),
-    });
+      const data = await res.json()
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setMessage(data.error || "Ошибка создания заказа");
-      setCreating(false);
-      return;
-    }
-
-    const createdCode = data?.result?.access_code || "—";
-    const createdNumber = data?.result?.order_number || newOrderNumber.trim();
-
-    setMessage(`Заказ создан: ${createdNumber}. Код: ${createdCode}`);
-
-    setNewOrderNumber("");
-    setNewClientName("");
-    setNewProductName("");
-    setNewSize("");
-    setNewStatus("created");
-    setNewComment("");
-    setNewAccessCode("");
-
-    const loadedOrders = await loadOrders(finalSecret);
-    if (loadedOrders && createdNumber) {
-      const created = loadedOrders.find(
-        (order) => order.order_number === createdNumber
-      );
-      if (created) {
-        setSelectedOrderId(created.id);
+      if (!res.ok) {
+        setMessage(data.error || "Ошибка создания заказа")
+        return
       }
-    }
 
-    setCreating(false);
+      setMessage(`Заказ создан. Код клиента: ${data.access_code || finalCode}`)
+      setNewOrderNumber("")
+      setNewClientName("")
+      setNewProductName("")
+      setNewSize("")
+      setNewComment("")
+      setNewAccessCode("")
+
+      await loadOrders(finalSecret)
+    } catch {
+      setMessage("Ошибка создания заказа")
+    }
   }
 
+  async function updateOrder() {
+    const finalSecret = secret.trim()
+
+    if (!finalSecret) {
+      setMessage("Введи ADMIN_SECRET")
+      return
+    }
+
+    if (!selectedOrderId) {
+      setMessage("Выбери заказ")
+      return
+    }
+
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": finalSecret,
+        },
+        body: JSON.stringify({
+          orderId: selectedOrderId,
+          status: selectedStatus,
+          comment: selectedComment,
+          accessCode: selectedAccessCode.trim().toUpperCase() || null,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.error || "Ошибка сохранения")
+        return
+      }
+
+      setMessage("Заказ обновлён")
+      await loadOrders(finalSecret)
+    } catch {
+      setMessage("Ошибка сохранения")
+    }
+  }
+
+  const visibleOrders = useMemo(() => {
+    return orders.filter((o) =>
+      tab === "active" ? o.status !== "delivered" : o.status === "delivered"
+    )
+  }, [orders, tab])
+
+  const selectedOrder = orders.find((o) => o.id === selectedOrderId)
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setSelectedStatus(selectedOrder.status)
+      setSelectedComment(selectedOrder.comment || "")
+      setSelectedAccessCode(selectedOrder.access_code || "")
+    }
+  }, [selectedOrderId, selectedOrder])
+
+  const cardStyle = {
+    background: "#111214",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "28px",
+    padding: "24px",
+  } as const
+
+  const inputStyle = {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    padding: "15px 16px",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "#0d0e10",
+    color: "#ffffff",
+    fontSize: "16px",
+    outline: "none",
+  }
+
+  const buttonStyle = {
+    border: "none",
+    borderRadius: "18px",
+    padding: "16px 18px",
+    fontSize: "16px",
+    fontWeight: 700,
+    cursor: "pointer",
+  } as const
+
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
-      <div className="mx-auto max-w-5xl px-5 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-              TRACKING
-            </p>
-            <h1 className="mt-2 text-4xl font-bold">Админка</h1>
+    <main
+      style={{
+        background: "#090909",
+        minHeight: "100vh",
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        padding: "32px 14px 60px",
+      }}
+    >
+      <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "24px" }}>
+          <div
+            style={{
+              color: "rgba(255,255,255,0.45)",
+              fontSize: "12px",
+              letterSpacing: "5px",
+              textTransform: "uppercase",
+              marginBottom: "10px",
+            }}
+          >
+            TRACKING
           </div>
 
-          <a
-            href="/orders"
-            className="rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white"
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "44px",
+              lineHeight: 1.1,
+            }}
           >
-            К заказам
-          </a>
+            Админка
+          </h1>
         </div>
 
-        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p className="mb-3 text-sm text-white/70">ADMIN_SECRET</p>
+        <div style={{ ...cardStyle, marginBottom: "24px" }}>
+          <div
+            style={{
+              color: "rgba(255,255,255,0.72)",
+              fontSize: "14px",
+              marginBottom: "12px",
+            }}
+          >
+            ADMIN_SECRET
+          </div>
 
-          <div className="flex gap-3">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 220px",
+              gap: "12px",
+            }}
+          >
             <input
-              type="password"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
-              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-              placeholder="Введи пароль админки"
+              type="password"
+              placeholder="Введи ADMIN_SECRET"
+              style={inputStyle}
             />
+
             <button
-              onClick={connect}
-              className="rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-black"
+              onClick={() => loadOrders(secret)}
+              style={{
+                ...buttonStyle,
+                background: "#f4f4f4",
+                color: "#000000",
+              }}
             >
-              Войти
+              Загрузить заказы
             </button>
           </div>
         </div>
 
         {message && (
-          <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/85">
+          <div
+            style={{
+              ...cardStyle,
+              marginBottom: "24px",
+              color: "#ffffff",
+            }}
+          >
             {message}
           </div>
         )}
 
-        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h2 className="mb-6 text-2xl font-bold">Создать заказ</h2>
+        <div style={{ ...cardStyle, marginBottom: "24px" }}>
+          <h2 style={{ marginTop: 0, marginBottom: "20px", fontSize: "34px" }}>
+            Создать заказ
+          </h2>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+              marginBottom: "12px",
+            }}
+          >
             <input
               value={newOrderNumber}
               onChange={(e) => setNewOrderNumber(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-              placeholder="Номер заказа, например KAI-2003"
-            />
-
-            <input
-              value={newAccessCode}
-              onChange={(e) => setNewAccessCode(e.target.value.toUpperCase())}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none uppercase"
-              placeholder="Код доступа (если пусто — создастся сам)"
+              placeholder="Номер заказа"
+              style={inputStyle}
             />
 
             <input
               value={newClientName}
               onChange={(e) => setNewClientName(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
               placeholder="Имя клиента"
+              style={inputStyle}
             />
 
             <input
               value={newProductName}
               onChange={(e) => setNewProductName(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
               placeholder="Товар"
+              style={inputStyle}
             />
 
             <input
               value={newSize}
               onChange={(e) => setNewSize(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
               placeholder="Размер"
+              style={inputStyle}
             />
 
-            <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-            >
-              {statusOptions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+            <input
+              value={newAccessCode}
+              onChange={(e) => setNewAccessCode(e.target.value.toUpperCase())}
+              placeholder="Код доступа (если пусто — создастся сам)"
+              style={{ ...inputStyle, gridColumn: "1 / span 2", textTransform: "uppercase" }}
+            />
           </div>
 
           <textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="mt-4 min-h-[120px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
             placeholder="Комментарий к новому заказу"
+            style={{
+              ...inputStyle,
+              minHeight: "120px",
+              resize: "vertical",
+              marginBottom: "12px",
+            }}
           />
 
           <button
             onClick={createOrder}
-            disabled={creating}
-            className="mt-4 w-full rounded-2xl bg-emerald-400 px-4 py-4 text-lg font-semibold text-black disabled:opacity-60"
+            style={{
+              ...buttonStyle,
+              width: "100%",
+              background: "#13e7a1",
+              color: "#000000",
+              fontSize: "20px",
+              padding: "18px",
+            }}
           >
-            {creating ? "Создаю..." : "Создать заказ"}
+            Создать заказ
           </button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Заказы</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "24px",
+          }}
+        >
+          <div style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "18px",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "34px" }}>Заказы</h2>
+
               <button
-                onClick={() => loadOrders()}
-                className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white"
+                onClick={() => loadOrders(secret)}
+                style={{
+                  ...buttonStyle,
+                  background: "rgba(255,255,255,0.06)",
+                  color: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
               >
                 Обновить
               </button>
             </div>
 
-            {loading ? (
-              <p className="text-sm text-white/60">Загрузка...</p>
-            ) : orders.length === 0 ? (
-              <p className="text-sm text-white/60">Заказов нет.</p>
-            ) : (
-              <div className="space-y-3">
-                {orders.map((order) => (
+            <div style={{ display: "flex", gap: "10px", marginBottom: "18px" }}>
+              <button
+                onClick={() => setTab("active")}
+                style={{
+                  ...buttonStyle,
+                  background: tab === "active" ? "#f4f4f4" : "rgba(255,255,255,0.06)",
+                  color: tab === "active" ? "#000000" : "#ffffff",
+                  border: tab === "active" ? "none" : "1px solid rgba(255,255,255,0.08)",
+                  flex: 1,
+                }}
+              >
+                Активные
+              </button>
+
+              <button
+                onClick={() => setTab("delivered")}
+                style={{
+                  ...buttonStyle,
+                  background: tab === "delivered" ? "#f4f4f4" : "rgba(255,255,255,0.06)",
+                  color: tab === "delivered" ? "#000000" : "#ffffff",
+                  border: tab === "delivered" ? "none" : "1px solid rgba(255,255,255,0.08)",
+                  flex: 1,
+                }}
+              >
+                Доставленные
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {visibleOrders.length === 0 ? (
+                <div style={{ color: "rgba(255,255,255,0.6)" }}>Заказов нет.</div>
+              ) : (
+                visibleOrders.map((order) => (
                   <button
                     key={order.id}
                     onClick={() => setSelectedOrderId(order.id)}
-                    className={`w-full rounded-2xl border p-4 text-left ${
-                      selectedOrderId === order.id
-                        ? "border-emerald-400/30 bg-emerald-400/10"
-                        : "border-white/10 bg-white/5"
-                    }`}
+                    style={{
+                      textAlign: "left" as const,
+                      width: "100%",
+                      padding: "18px",
+                      borderRadius: "20px",
+                      cursor: "pointer",
+                      background:
+                        selectedOrderId === order.id
+                          ? "rgba(19,231,161,0.12)"
+                          : "#0d0e10",
+                      border:
+                        selectedOrderId === order.id
+                          ? "1px solid rgba(19,231,161,0.25)"
+                          : "1px solid rgba(255,255,255,0.06)",
+                      color: "#ffffff",
+                    }}
                   >
-                    <p className="text-xl font-bold">{order.order_number}</p>
-                    <p className="mt-1 text-xs text-white/45">
-                      Код: {order.access_code}
-                    </p>
-                    <p className="mt-2 text-sm text-white/70">{order.product_name}</p>
-                    <p className="mt-1 text-sm text-white/55">
+                    <div style={{ fontSize: "28px", fontWeight: 700, marginBottom: "8px" }}>
+                      {order.order_number}
+                    </div>
+                    <div style={{ fontSize: "18px", marginBottom: "6px" }}>
+                      {order.product_name}
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", marginBottom: "6px" }}>
                       {getStatusLabel(order.status)}
-                    </p>
+                    </div>
+                    <div style={{ color: "#5dffba", fontSize: "13px", fontWeight: 700 }}>
+                      Код: {order.access_code || "—"}
+                    </div>
                   </button>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <h2 className="mb-6 text-2xl font-bold">Редактирование</h2>
+          <div style={cardStyle}>
+            <h2 style={{ marginTop: 0, marginBottom: "20px", fontSize: "34px" }}>
+              Редактирование
+            </h2>
 
-            {selectedOrderId ? (
-              <>
-                <p className="mb-3 text-sm text-white/60">
-                  Код текущего заказа:{" "}
-                  {orders.find((order) => order.id === selectedOrderId)?.access_code || "—"}
-                </p>
-
-                <div className="space-y-5">
-                  <div>
-                    <p className="mb-2 text-sm text-white/70">Статус</p>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-                    >
-                      {statusOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-sm text-white/70">Комментарий</p>
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="min-h-[150px] w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none"
-                      placeholder="Новый комментарий"
-                    />
-                  </div>
-
-                  <button
-                    onClick={saveOrder}
-                    disabled={saving}
-                    className="w-full rounded-2xl bg-white px-4 py-4 text-lg font-semibold text-black disabled:opacity-60"
-                  >
-                    {saving ? "Сохраняю..." : "Сохранить и добавить этап"}
-                  </button>
-                </div>
-              </>
+            {!selectedOrder ? (
+              <div style={{ color: "rgba(255,255,255,0.6)" }}>Выбери заказ слева.</div>
             ) : (
-              <p className="text-sm text-white/60">Выбери заказ слева.</p>
+              <>
+                <div
+                  style={{
+                    marginBottom: "18px",
+                    color: "rgba(255,255,255,0.78)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <div>Выбран заказ: {selectedOrder.order_number}</div>
+                  <div>{selectedOrder.product_name}</div>
+                </div>
+
+                <div style={{ marginBottom: "12px", color: "rgba(255,255,255,0.72)" }}>
+                  Код доступа
+                </div>
+
+                <input
+                  value={selectedAccessCode}
+                  onChange={(e) => setSelectedAccessCode(e.target.value.toUpperCase())}
+                  placeholder="Код доступа"
+                  style={{ ...inputStyle, marginBottom: "18px", textTransform: "uppercase" }}
+                />
+
+                <div style={{ marginBottom: "12px", color: "rgba(255,255,255,0.72)" }}>
+                  Статус
+                </div>
+
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  style={{ ...inputStyle, marginBottom: "18px" }}
+                >
+                  {statusOptions.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+
+                <div style={{ marginBottom: "12px", color: "rgba(255,255,255,0.72)" }}>
+                  Комментарий
+                </div>
+
+                <textarea
+                  value={selectedComment}
+                  onChange={(e) => setSelectedComment(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    minHeight: "180px",
+                    resize: "vertical",
+                    marginBottom: "12px",
+                  }}
+                />
+
+                <button
+                  onClick={updateOrder}
+                  style={{
+                    ...buttonStyle,
+                    width: "100%",
+                    background: "#f4f4f4",
+                    color: "#000000",
+                    fontSize: "20px",
+                    padding: "18px",
+                  }}
+                >
+                  Сохранить и добавить этап
+                </button>
+              </>
             )}
           </div>
         </div>
       </div>
     </main>
-  );
+  )
 }
