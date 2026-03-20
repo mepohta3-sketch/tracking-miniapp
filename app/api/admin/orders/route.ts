@@ -18,6 +18,10 @@ const statusMap: Record<string, string> = {
   delivered: "Доставлен",
 };
 
+function normalizeText(value: unknown) {
+  return String(value ?? "").trim();
+}
+
 async function sendTelegramNotification(
   telegramId: number,
   orderNumber: string,
@@ -110,7 +114,9 @@ export async function POST(req: Request) {
         : String(body.comment).trim();
 
     const accessCode =
-      body.accessCode === undefined || body.accessCode === null || String(body.accessCode).trim() === ""
+      body.accessCode === undefined ||
+      body.accessCode === null ||
+      String(body.accessCode).trim() === ""
         ? null
         : String(body.accessCode).trim().toUpperCase();
 
@@ -129,7 +135,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "order not found" }, { status: 404 });
     }
 
-    if (accessCode) {
+    if (accessCode && accessCode !== currentOrder.access_code) {
       const { error: codeError } = await supabase
         .from("orders")
         .update({ access_code: accessCode })
@@ -138,6 +144,38 @@ export async function POST(req: Request) {
       if (codeError) {
         return NextResponse.json({ error: codeError.message }, { status: 500 });
       }
+    }
+
+    const { data: lastEvents, error: lastEventError } = await supabase
+      .from("order_events")
+      .select("status,comment,created_at")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (lastEventError) {
+      console.error("last event load error:", lastEventError);
+      return NextResponse.json({ error: lastEventError.message }, { status: 500 });
+    }
+
+    const lastEvent = lastEvents?.[0] || null;
+
+    const sameStatus = lastEvent?.status === status;
+    const sameComment =
+      normalizeText(lastEvent?.comment) === normalizeText(comment);
+
+    if (sameStatus && sameComment) {
+      console.log("duplicate event skipped:", {
+        orderId,
+        status,
+        comment,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        message: "duplicate skipped",
+      });
     }
 
     const { error: insertError } = await supabase
