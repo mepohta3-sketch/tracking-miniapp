@@ -280,215 +280,171 @@ export default function Home() {
         }}
       >
         {/* ГЛАВНЫЙ БЛОК */}
-        <section
-          style={{
-            ...cardBase,
-            overflow: "hidden",
-            marginBottom: "20px",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 32%, transparent 100%)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: "-90px",
-              right: "-60px",
-              width: "240px",
-              height: "240px",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(84,226,176,0.20) 0%, transparent 62%)",
-              filter: "blur(8px)",
-              pointerEvents: "none",
-            }}
-          />
+<section
+  style={{
+    ...cardBase,
+    overflow: "hidden",
+    marginBottom: "20px",
+    position: "relative",
+  }}
+>
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background:
+        "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 32%, transparent 100%)",
+      pointerEvents: "none",
+    }}
+  />
+  <div
+    style={{
+      position: "absolute",
+      top: "-90px",
+      right: "-60px",
+      width: "240px",
+      height: "240px",
+      borderRadius: "50%",
+      background: "radial-gradient(circle, rgba(84,226,176,0.20) 0%, transparent 62%)",
+      filter: "blur(8px)",
+      pointerEvents: "none",
+    }}
+  />
 
-          <div style={{ padding: "28px 24px 24px", position: "relative", zIndex: 1 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 12px",
-                borderRadius: "999px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                marginBottom: "18px",
-              }}
-            >
-              <div
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "#84F2CB",
-                  boxShadow: "0 0 16px rgba(132,242,203,0.65)",
-                }}
-              />
-              <span
-                style={{
-                  fontSize: "11px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.24em",
-                  color: "rgba(255,255,255,0.58)",
-                }}
-              >
-                Kai Store
-              </span>
-            </div>
+  <div style={{ padding: "28px 24px 24px", position: "relative", zIndex: 1 }}>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "8px 12px",
+        borderRadius: "999px",
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        marginBottom: "18px",
+      }}
+    >
+      <div
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          background: "#84F2CB",
+          boxShadow: "0 0 16px rgba(132,242,203,0.65)",
+        }}
+      />
+      <span
+        style={{
+          fontSize: "11px",
+          textTransform: "uppercase",
+          letterSpacing: "0.24em",
+          color: "rgba(255,255,255,0.58)",
+        }}
+      >
+        Kai Store Tracking
+      </span>
+    </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 84px",
-                gap: "16px",
-                alignItems: "start",
-                marginBottom: "18px",
-              }}
-            >
-              <div>
-                <h1
-                  style={{
-                    margin: "0 0 12px 0",
-                    fontSize: "40px",
-                    lineHeight: 0.94,
-                    letterSpacing: "-0.06em",
-                    fontWeight: 800,
-                  }}
-                >
-                  Заказ
-                  <br />
-                  под контролем
-                </h1>
+    <h1
+      style={{
+        margin: "0 0 12px 0",
+        fontSize: "40px",
+        lineHeight: 0.94,
+        letterSpacing: "-0.06em",
+        fontWeight: 800,
+      }}
+    >
+      Заказ
+      <br />
+      под
+      <br />
+      контролем
+    </h1>
 
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    lineHeight: 1.72,
-                    color: "rgba(255,255,255,0.72)",
-                    maxWidth: "320px",
-                  }}
-                >
-                  Статус, история, прогресс и уведомления в одном аккуратном интерфейсе.
-                </p>
-              </div>
+    <p
+      style={{
+        margin: "0 0 20px 0",
+        fontSize: "15px",
+        lineHeight: 1.72,
+        color: "rgba(255,255,255,0.72)",
+        maxWidth: "320px",
+      }}
+    >
+      Статус, история, прогресс и уведомления в одном аккуратном интерфейсе.
+    </p>
 
-              <div
-                style={{
-                  height: "84px",
-                  borderRadius: "24px",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.04)",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "10px",
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "rgba(255,255,255,0.42)",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Онлайн
-                </div>
-                <div
-                  style={{
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    background: "#84F2CB",
-                    boxShadow: "0 0 20px rgba(132,242,203,0.58)",
-                  }}
-                />
-              </div>
-            </div>
+    <div style={{ display: "grid", gap: "10px", marginBottom: "14px" }}>
+      <input
+        value={orderNumber}
+        onChange={(e) => setOrderNumber(e.target.value)}
+        placeholder="Номер заказа"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "16px 18px",
+          borderRadius: "18px",
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.03)",
+          color: "#ffffff",
+          fontSize: "16px",
+          outline: "none",
+          backdropFilter: "blur(8px)",
+        }}
+      />
 
-            <div style={{ display: "grid", gap: "10px", marginBottom: "14px" }}>
-              <input
-                value={orderNumber}
-                onChange={(e) => setOrderNumber(e.target.value)}
-                placeholder="Номер заказа"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "16px 18px",
-                  borderRadius: "18px",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "#ffffff",
-                  fontSize: "16px",
-                  outline: "none",
-                  backdropFilter: "blur(8px)",
-                }}
-              />
+      <input
+        value={accessCode}
+        onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+        placeholder="Код доступа"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "16px 18px",
+          borderRadius: "18px",
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.03)",
+          color: "#ffffff",
+          fontSize: "16px",
+          outline: "none",
+          textTransform: "uppercase",
+          backdropFilter: "blur(8px)",
+        }}
+      />
 
-              <input
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                placeholder="Код доступа"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "16px 18px",
-                  borderRadius: "18px",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "#ffffff",
-                  fontSize: "16px",
-                  outline: "none",
-                  textTransform: "uppercase",
-                  backdropFilter: "blur(8px)",
-                }}
-              />
+      <button
+        onClick={searchOrder}
+        style={{
+          width: "100%",
+          padding: "17px",
+          borderRadius: "18px",
+          border: "none",
+          background: "#F3F3F3",
+          color: "#000000",
+          fontSize: "17px",
+          fontWeight: 700,
+          cursor: "pointer",
+          marginTop: "2px",
+        }}
+      >
+        {loading ? "Загрузка..." : "Найти заказ"}
+      </button>
+    </div>
 
-              <button
-                onClick={searchOrder}
-                style={{
-                  width: "100%",
-                  padding: "17px",
-                  borderRadius: "18px",
-                  border: "none",
-                  background: "#F3F3F3",
-                  color: "#000000",
-                  fontSize: "17px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  marginTop: "2px",
-                }}
-              >
-                {loading ? "Загрузка..." : "Найти заказ"}
-              </button>
-            </div>
-
-            {error && (
-              <div
-                style={{
-                  marginTop: "14px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#ff7373",
-                }}
-              >
-                {error}
-              </div>
-            )}
-          </div>
-        </section>
-
+    {error && (
+      <div
+        style={{
+          marginTop: "14px",
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "#ff7373",
+        }}
+      >
+        {error}
+      </div>
+    )}
+  </div>
+</section>
+              
         {/* ЗАГРУЗКА */}
         {loading && (
           <section
@@ -1333,7 +1289,7 @@ export default function Home() {
 
             <a
               href="https://t.me/manager_KaiStore"
-              target="_blank"
+              target="_blank"	
               rel="noreferrer"
               style={{
                 display: "block",
