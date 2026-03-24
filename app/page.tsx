@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 declare global {
   interface Window {
@@ -16,33 +16,13 @@ const statusMap: Record<string, string> = {
   delivered: "Доставлен",
 }
 
-const statusBadgeStyles: Record<string, { bg: string; border: string; color: string }> = {
-  created: {
-    bg: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    color: "#ffffff",
-  },
-  bought_out: {
-    bg: "rgba(255,214,10,0.12)",
-    border: "1px solid rgba(255,214,10,0.25)",
-    color: "#ffe066",
-  },
-  to_china_warehouse: {
-    bg: "rgba(0,122,255,0.12)",
-    border: "1px solid rgba(0,122,255,0.25)",
-    color: "#7cc4ff",
-  },
-  to_novosibirsk: {
-    bg: "rgba(19,231,161,0.12)",
-    border: "1px solid rgba(19,231,161,0.25)",
-    color: "#5dffba",
-  },
-  delivered: {
-    bg: "rgba(19,231,161,0.14)",
-    border: "1px solid rgba(19,231,161,0.28)",
-    color: "#5dffba",
-  },
-}
+const statusOrder = [
+  "created",
+  "bought_out",
+  "to_china_warehouse",
+  "to_novosibirsk",
+  "delivered",
+]
 
 const faqItems = [
   {
@@ -72,17 +52,9 @@ const faqItems = [
   },
 ]
 
-const trackingSteps = [
-  { key: "created", label: "Оформлен" },
-  { key: "bought_out", label: "Выкуплен" },
-  { key: "to_china_warehouse", label: "Склад Китай" },
-  { key: "to_novosibirsk", label: "В пути" },
-  { key: "delivered", label: "Доставлен" },
-]
-
-function getProgressIndex(status: string) {
-  const idx = trackingSteps.findIndex((step) => step.key === status)
-  return idx === -1 ? 0 : idx
+function getStatusIndex(status: string) {
+  const index = statusOrder.indexOf(status)
+  return index === -1 ? 0 : index
 }
 
 function formatDateTime(value: string) {
@@ -93,20 +65,39 @@ function formatDateTime(value: string) {
   })}`
 }
 
-function dedupeEvents(events: any[]) {
-  const seen = new Set<string>()
-  const result: any[] = []
-
-  for (let i = events.length - 1; i >= 0; i--) {
-    const item = events[i]
-    const signature = `${item.status}__${item.comment || ""}`
-    if (!seen.has(signature)) {
-      seen.add(signature)
-      result.unshift(item)
-    }
+function getStatusStyles(status: string) {
+  switch (status) {
+    case "bought_out":
+      return {
+        bg: "rgba(255, 214, 10, 0.12)",
+        border: "1px solid rgba(255, 214, 10, 0.24)",
+        color: "#FFE37A",
+      }
+    case "to_china_warehouse":
+      return {
+        bg: "rgba(89, 163, 255, 0.12)",
+        border: "1px solid rgba(89, 163, 255, 0.24)",
+        color: "#8CC4FF",
+      }
+    case "to_novosibirsk":
+      return {
+        bg: "rgba(19, 231, 161, 0.12)",
+        border: "1px solid rgba(19, 231, 161, 0.24)",
+        color: "#6BF4C5",
+      }
+    case "delivered":
+      return {
+        bg: "rgba(19, 231, 161, 0.14)",
+        border: "1px solid rgba(19, 231, 161, 0.3)",
+        color: "#7FF7D0",
+      }
+    default:
+      return {
+        bg: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        color: "#FFFFFF",
+      }
   }
-
-  return result
 }
 
 export default function Home() {
@@ -160,7 +151,7 @@ export default function Home() {
       }
 
       setOrder(data.order)
-      setEvents(dedupeEvents(data.events || []))
+      setEvents(data.events || [])
     } catch {
       setError("Ошибка загрузки заказа")
     } finally {
@@ -204,205 +195,230 @@ export default function Home() {
     }
   }
 
-  const currentStatus = order?.status || ""
-  const badgeStyle =
-    statusBadgeStyles[currentStatus] || {
-      bg: "rgba(255,255,255,0.08)",
-      border: "1px solid rgba(255,255,255,0.12)",
-      color: "#ffffff",
-    }
-
-  const progressIndex = getProgressIndex(currentStatus)
-  const progressWidth =
-    trackingSteps.length > 1 ? `${(progressIndex / (trackingSteps.length - 1)) * 100}%` : "0%"
-
-  const lastEvent = useMemo(() => {
-    if (!events.length) return null
-    return events[events.length - 1]
-  }, [events])
-
-  const cardStyle: React.CSSProperties = {
-    background: "linear-gradient(180deg, rgba(17,18,20,1) 0%, rgba(13,14,16,1) 100%)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "28px",
-    padding: "24px",
-    marginBottom: "20px",
-    boxShadow:
-      "0 0 0 1px rgba(255,255,255,0.02) inset, 0 24px 60px rgba(0,0,0,0.32)",
-    backdropFilter: "blur(12px)",
-  }
-
-  const innerCardStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "18px",
-    padding: "16px",
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "16px 18px",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "#0c0d0f",
-    color: "#ffffff",
-    fontSize: "16px",
-    outline: "none",
-  }
-
-  const primaryButtonStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "17px",
-    borderRadius: "18px",
-    border: "none",
-    background: "#f3f3f3",
-    color: "#000000",
-    fontWeight: 700,
-    fontSize: "17px",
-    cursor: "pointer",
-    letterSpacing: "0.01em",
-  }
-
-  const secondaryButtonStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "16px",
-    borderRadius: "18px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#ffffff",
-    fontWeight: 700,
-    fontSize: "16px",
-    cursor: "pointer",
-  }
+  const currentStatus = order?.status || "created"
+  const currentStatusLabel = statusMap[currentStatus] || currentStatus
+  const currentStatusIndex = getStatusIndex(currentStatus)
+  const statusStyles = getStatusStyles(currentStatus)
+  const progressPercent =
+    statusOrder.length > 1
+      ? `${(currentStatusIndex / (statusOrder.length - 1)) * 100}%`
+      : "0%"
 
   return (
     <main
       style={{
         background:
-          "radial-gradient(circle at top, rgba(19,231,161,0.08) 0%, rgba(9,9,9,1) 28%), #090909",
+          "radial-gradient(circle at top center, rgba(19,231,161,0.08) 0%, rgba(9,9,9,1) 26%), #090909",
         minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        padding: "32px 12px 56px",
-        fontFamily: "Arial, sans-serif",
+        padding: "28px 12px 56px",
+        fontFamily: "Inter, Arial, sans-serif",
         color: "#ffffff",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "430px" }}>
-        <div style={cardStyle}>
+      <div style={{ maxWidth: "430px", margin: "0 auto" }}>
+        {/* HERO */}
+        <div
+          style={{
+            position: "relative",
+            background:
+              "linear-gradient(180deg, rgba(20,21,24,0.98) 0%, rgba(12,13,15,0.98) 100%)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "32px",
+            padding: "26px",
+            marginBottom: "20px",
+            overflow: "hidden",
+            boxShadow:
+              "0 0 0 1px rgba(255,255,255,0.02) inset, 0 24px 80px rgba(0,0,0,0.38)",
+          }}
+        >
           <div
             style={{
-              color: "rgba(255,255,255,0.42)",
-              fontSize: "11px",
-              letterSpacing: "0.32em",
-              textTransform: "uppercase",
-              marginBottom: "10px",
+              position: "absolute",
+              top: "-80px",
+              right: "-40px",
+              width: "180px",
+              height: "180px",
+              borderRadius: "50%",
+              background: "rgba(19,231,161,0.08)",
+              filter: "blur(40px)",
+              pointerEvents: "none",
             }}
-          >
-            Tracking
-          </div>
+          />
 
           <div
             style={{
-              color: "rgba(255,255,255,0.58)",
-              fontSize: "12px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              marginBottom: "16px",
+              position: "relative",
+              zIndex: 1,
             }}
           >
-            by Kai Store
-          </div>
-
-          <h1
-            style={{
-              margin: "0 0 12px 0",
-              fontSize: "34px",
-              lineHeight: 1.06,
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            Контроль заказа
-          </h1>
-
-          <p
-            style={{
-              margin: "0 0 20px 0",
-              color: "rgba(255,255,255,0.72)",
-              fontSize: "15px",
-              lineHeight: 1.65,
-            }}
-          >
-            Введи номер заказа и код доступа, чтобы сразу увидеть текущий этап и историю обновлений.
-          </p>
-
-          <div style={{ display: "grid", gap: "10px" }}>
-            <input
-              value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="Номер заказа"
-              style={inputStyle}
-            />
-
-            <input
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-              placeholder="Код доступа"
-              style={{ ...inputStyle, textTransform: "uppercase" }}
-            />
-
-            <button onClick={searchOrder} style={primaryButtonStyle}>
-              {loading ? "Загрузка..." : "Найти заказ"}
-            </button>
-          </div>
-
-          {error && (
             <div
               style={{
-                marginTop: "14px",
-                color: "#ff6b6b",
-                fontSize: "14px",
-                fontWeight: 600,
+                fontSize: "11px",
+                textTransform: "uppercase",
+                letterSpacing: "0.34em",
+                color: "rgba(255,255,255,0.42)",
+                marginBottom: "10px",
               }}
             >
-              {error}
+              Tracking
             </div>
-          )}
+
+            <div
+              style={{
+                fontSize: "12px",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                color: "rgba(255,255,255,0.56)",
+                marginBottom: "16px",
+              }}
+            >
+              Kai Store
+            </div>
+
+            <h1
+              style={{
+                margin: "0 0 12px 0",
+                fontSize: "38px",
+                lineHeight: 0.96,
+                letterSpacing: "-0.05em",
+                fontWeight: 800,
+              }}
+            >
+              Order
+              <br />
+              Tracking
+            </h1>
+
+            <p
+              style={{
+                margin: "0 0 20px 0",
+                color: "rgba(255,255,255,0.72)",
+                fontSize: "15px",
+                lineHeight: 1.7,
+                maxWidth: "320px",
+              }}
+            >
+              Премиальный трекинг заказа с прозрачной историей, статусом и быстрым доступом к поддержке.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gap: "10px",
+              }}
+            >
+              <input
+                value={orderNumber}
+                onChange={(e) => setOrderNumber(e.target.value)}
+                placeholder="Номер заказа"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "16px 18px",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#ffffff",
+                  fontSize: "16px",
+                  outline: "none",
+                }}
+              />
+
+              <input
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                placeholder="Код доступа"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "16px 18px",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#ffffff",
+                  fontSize: "16px",
+                  outline: "none",
+                  textTransform: "uppercase",
+                }}
+              />
+
+              <button
+                onClick={searchOrder}
+                style={{
+                  width: "100%",
+                  padding: "17px",
+                  borderRadius: "18px",
+                  border: "none",
+                  background: "#F2F2F2",
+                  color: "#000000",
+                  fontSize: "17px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginTop: "2px",
+                }}
+              >
+                {loading ? "Загрузка..." : "Найти заказ"}
+              </button>
+            </div>
+
+            {error && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#ff7272",
+                }}
+              >
+                {error}
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* ORDER CORE */}
         {order && (
           <>
-            <div style={cardStyle}>
+            <div
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(18,19,22,1) 0%, rgba(12,13,15,1) 100%)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "28px",
+                padding: "22px",
+                marginBottom: "20px",
+                boxShadow:
+                  "0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 60px rgba(0,0,0,0.32)",
+              }}
+            >
               <div
                 style={{
                   display: "flex",
-                  alignItems: "flex-start",
                   justifyContent: "space-between",
-                  gap: "12px",
+                  alignItems: "flex-start",
+                  gap: "14px",
                   marginBottom: "18px",
                 }}
               >
                 <div>
                   <div
                     style={{
-                      color: "rgba(255,255,255,0.42)",
                       fontSize: "11px",
-                      letterSpacing: "0.24em",
                       textTransform: "uppercase",
+                      letterSpacing: "0.26em",
+                      color: "rgba(255,255,255,0.4)",
                       marginBottom: "8px",
                     }}
                   >
-                    Заказ
+                    Order ID
                   </div>
 
                   <div
                     style={{
                       fontSize: "34px",
                       fontWeight: 800,
+                      letterSpacing: "-0.05em",
                       lineHeight: 1,
-                      letterSpacing: "-0.03em",
                     }}
                   >
                     {order.order_number}
@@ -411,25 +427,25 @@ export default function Home() {
 
                 <div
                   style={{
-                    whiteSpace: "nowrap",
-                    borderRadius: "999px",
                     padding: "10px 14px",
-                    background: badgeStyle.bg,
-                    border: badgeStyle.border,
-                    color: badgeStyle.color,
+                    borderRadius: "999px",
+                    background: statusStyles.bg,
+                    border: statusStyles.border,
+                    color: statusStyles.color,
                     fontSize: "13px",
                     fontWeight: 700,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {statusMap[order.status] || order.status}
+                  {currentStatusLabel}
                 </div>
               </div>
 
               <div
                 style={{
                   fontSize: "22px",
-                  fontWeight: 700,
                   lineHeight: 1.25,
+                  fontWeight: 700,
                   marginBottom: "16px",
                 }}
               >
@@ -439,37 +455,114 @@ export default function Home() {
               <div
                 style={{
                   display: "grid",
-                  gap: "8px",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px",
                   marginBottom: "18px",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: "15px",
                 }}
               >
-                {order.client_name && <div>Клиент: {order.client_name}</div>}
-                {order.size && <div>Размер: {order.size}</div>}
-                {lastEvent?.created_at && (
-                  <div>Последнее обновление: {formatDateTime(lastEvent.created_at)}</div>
-                )}
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "18px",
+                    padding: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.18em",
+                      color: "rgba(255,255,255,0.42)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Client
+                  </div>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: "15px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {order.client_name || "—"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "18px",
+                    padding: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.18em",
+                      color: "rgba(255,255,255,0.42)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Size
+                  </div>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: "15px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {order.size || "—"}
+                  </div>
+                </div>
               </div>
 
-              <div style={{ marginBottom: "18px" }}>
+              {/* NEW PROGRESS RAIL */}
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "22px",
+                  padding: "16px",
+                  marginBottom: "18px",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    color: "rgba(255,255,255,0.58)",
-                    fontSize: "12px",
-                    marginBottom: "10px",
+                    alignItems: "center",
+                    marginBottom: "12px",
                   }}
                 >
-                  <span>Прогресс</span>
-                  <span>{progressIndex + 1} / {trackingSteps.length}</span>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#ffffff",
+                    }}
+                  >
+                    Статус заказа
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "rgba(255,255,255,0.54)",
+                    }}
+                  >
+                    Этап {currentStatusIndex + 1} из {statusOrder.length}
+                  </div>
                 </div>
 
                 <div
                   style={{
                     position: "relative",
-                    height: "8px",
+                    height: "6px",
                     borderRadius: "999px",
                     background: "rgba(255,255,255,0.06)",
                     overflow: "hidden",
@@ -479,14 +572,12 @@ export default function Home() {
                   <div
                     style={{
                       position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: progressWidth,
-                      background:
-                        "linear-gradient(90deg, rgba(19,231,161,0.8) 0%, rgba(19,231,161,1) 100%)",
+                      inset: 0,
+                      width: progressPercent,
                       borderRadius: "999px",
-                      boxShadow: "0 0 20px rgba(19,231,161,0.35)",
+                      background:
+                        "linear-gradient(90deg, rgba(19,231,161,0.85) 0%, rgba(19,231,161,1) 100%)",
+                      boxShadow: "0 0 24px rgba(19,231,161,0.35)",
                     }}
                   />
                 </div>
@@ -498,13 +589,13 @@ export default function Home() {
                     gap: "8px",
                   }}
                 >
-                  {trackingSteps.map((step, index) => {
-                    const active = index <= progressIndex
-                    const current = index === progressIndex
+                  {statusOrder.map((key, index) => {
+                    const done = index <= currentStatusIndex
+                    const current = index === currentStatusIndex
 
                     return (
                       <div
-                        key={step.key}
+                        key={key}
                         style={{
                           display: "flex",
                           flexDirection: "column",
@@ -514,22 +605,24 @@ export default function Home() {
                       >
                         <div
                           style={{
-                            width: "12px",
-                            height: "12px",
+                            width: current ? "12px" : "10px",
+                            height: current ? "12px" : "10px",
                             borderRadius: "50%",
-                            background: active ? "#13e7a1" : "rgba(255,255,255,0.16)",
-                            boxShadow: current ? "0 0 0 5px rgba(19,231,161,0.12)" : "none",
+                            background: done ? "#13E7A1" : "rgba(255,255,255,0.16)",
+                            boxShadow: current
+                              ? "0 0 0 5px rgba(19,231,161,0.12)"
+                              : "none",
                           }}
                         />
                         <div
                           style={{
                             textAlign: "center",
-                            fontSize: "11px",
+                            fontSize: "10px",
                             lineHeight: 1.35,
-                            color: active ? "#ffffff" : "rgba(255,255,255,0.42)",
+                            color: done ? "#ffffff" : "rgba(255,255,255,0.38)",
                           }}
                         >
-                          {step.label}
+                          {statusMap[key]}
                         </div>
                       </div>
                     )
@@ -537,7 +630,20 @@ export default function Home() {
                 </div>
               </div>
 
-              <button onClick={bindNotifications} style={secondaryButtonStyle}>
+              <button
+                onClick={bindNotifications}
+                style={{
+                  width: "100%",
+                  padding: "16px",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
                 Подключить уведомления
               </button>
 
@@ -545,9 +651,9 @@ export default function Home() {
                 <div
                   style={{
                     marginTop: "12px",
-                    color: "#5dffba",
                     fontSize: "14px",
                     fontWeight: 600,
+                    color: "#6EF0C2",
                   }}
                 >
                   {bindMessage}
@@ -555,16 +661,45 @@ export default function Home() {
               )}
             </div>
 
-            <div style={cardStyle}>
+            {/* HISTORY */}
+            <div
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(18,19,22,1) 0%, rgba(12,13,15,1) 100%)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "28px",
+                padding: "22px",
+                marginBottom: "20px",
+                boxShadow:
+                  "0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 60px rgba(0,0,0,0.32)",
+              }}
+            >
               <div
                 style={{
-                  fontSize: "22px",
-                  fontWeight: 700,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   marginBottom: "16px",
-                  letterSpacing: "-0.02em",
                 }}
               >
-                История заказа
+                <div
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  История заказа
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  {events.length} этапов
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -572,8 +707,8 @@ export default function Home() {
                   <div
                     key={index}
                     style={{
-                      display: "flex",
-                      alignItems: "flex-start",
+                      display: "grid",
+                      gridTemplateColumns: "18px 1fr",
                       gap: "14px",
                     }}
                   >
@@ -582,7 +717,6 @@ export default function Home() {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        minWidth: "16px",
                       }}
                     >
                       <div
@@ -590,7 +724,7 @@ export default function Home() {
                           width: "12px",
                           height: "12px",
                           borderRadius: "50%",
-                          background: "#13e7a1",
+                          background: "#13E7A1",
                           marginTop: "4px",
                           boxShadow: "0 0 0 4px rgba(19,231,161,0.12)",
                         }}
@@ -600,22 +734,29 @@ export default function Home() {
                           style={{
                             width: "2px",
                             flex: 1,
-                            minHeight: "36px",
-                            background: "rgba(255,255,255,0.12)",
+                            minHeight: "42px",
+                            background: "rgba(255,255,255,0.1)",
                             marginTop: "8px",
                           }}
                         />
                       )}
                     </div>
 
-                    <div>
+                    <div
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: "18px",
+                        padding: "14px",
+                      }}
+                    >
                       <div
                         style={{
                           color: "#ffffff",
-                          fontSize: "16px",
+                          fontSize: "15px",
                           fontWeight: 700,
+                          lineHeight: 1.45,
                           marginBottom: "6px",
-                          lineHeight: 1.4,
                         }}
                       >
                         {event.comment || statusMap[event.status] || event.status}
@@ -623,7 +764,7 @@ export default function Home() {
 
                       <div
                         style={{
-                          color: "rgba(255,255,255,0.5)",
+                          color: "rgba(255,255,255,0.48)",
                           fontSize: "13px",
                         }}
                       >
@@ -637,7 +778,19 @@ export default function Home() {
           </>
         )}
 
-        <div style={cardStyle}>
+        {/* KNOWLEDGE */}
+        <div
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(18,19,22,1) 0%, rgba(12,13,15,1) 100%)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "28px",
+            padding: "22px",
+            marginBottom: "20px",
+            boxShadow:
+              "0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 60px rgba(0,0,0,0.32)",
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -650,22 +803,21 @@ export default function Home() {
             <div>
               <div
                 style={{
-                  color: "rgba(255,255,255,0.42)",
                   fontSize: "11px",
-                  letterSpacing: "0.24em",
                   textTransform: "uppercase",
+                  letterSpacing: "0.24em",
+                  color: "rgba(255,255,255,0.42)",
                   marginBottom: "8px",
                 }}
               >
-                Раздел
+                Knowledge
               </div>
 
               <div
                 style={{
-                  color: "#ffffff",
                   fontSize: "28px",
                   fontWeight: 700,
-                  letterSpacing: "-0.02em",
+                  letterSpacing: "-0.03em",
                 }}
               >
                 Полезное
@@ -682,18 +834,27 @@ export default function Home() {
                 whiteSpace: "nowrap",
               }}
             >
-              FAQ / отзывы / инфо
+              FAQ / отзывы / info
             </div>
           </div>
 
-          <div style={{ ...innerCardStyle, marginBottom: "12px", padding: "14px" }}>
+          {/* FAQ ACCORDION */}
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "22px",
+              padding: "14px",
+              marginBottom: "12px",
+            }}
+          >
             <div
               style={{
                 color: "#ffffff",
                 fontSize: "16px",
                 fontWeight: 700,
                 marginBottom: "10px",
-                padding: "6px 6px 2px",
+                padding: "4px 6px 2px",
               }}
             >
               FAQ
@@ -707,7 +868,7 @@ export default function Home() {
                   <div
                     key={index}
                     style={{
-                      background: "rgba(255,255,255,0.03)",
+                      background: "rgba(255,255,255,0.025)",
                       border: "1px solid rgba(255,255,255,0.06)",
                       borderRadius: "16px",
                       overflow: "hidden",
@@ -770,7 +931,16 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ ...innerCardStyle, marginBottom: "12px" }}>
+          {/* REVIEWS */}
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "22px",
+              padding: "16px",
+              marginBottom: "12px",
+            }}
+          >
             <div
               style={{
                 color: "#ffffff",
@@ -786,11 +956,11 @@ export default function Home() {
               style={{
                 color: "rgba(255,255,255,0.72)",
                 fontSize: "15px",
-                lineHeight: 1.6,
-                marginBottom: "16px",
+                lineHeight: 1.65,
+                marginBottom: "14px",
               }}
             >
-              Реальные отзывы клиентов и подтверждение доверия. Можно открыть Telegram-канал и посмотреть больше отзывов.
+              Реальные отзывы клиентов и подтверждение доверия. Открой Telegram-канал и посмотри больше отзывов.
             </div>
 
             <a
@@ -802,7 +972,7 @@ export default function Home() {
                 width: "100%",
                 boxSizing: "border-box",
                 textAlign: "center",
-                background: "rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.05)",
                 color: "#ffffff",
                 padding: "14px 16px",
                 borderRadius: "16px",
@@ -816,110 +986,168 @@ export default function Home() {
             </a>
           </div>
 
-          <div style={innerCardStyle}>
+          {/* USEFUL INFO - REALLY NEW DESIGN */}
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "22px",
+              padding: "16px",
+            }}
+          >
             <div
               style={{
                 color: "#ffffff",
                 fontSize: "16px",
                 fontWeight: 700,
-                marginBottom: "14px",
+                marginBottom: "12px",
               }}
             >
               Полезная инфа
             </div>
 
-            <div style={{ display: "grid", gap: "12px" }}>
+            <div style={{ display: "grid", gap: "10px" }}>
               <div
                 style={{
-                  background: "rgba(255,255,255,0.03)",
+                  padding: "18px",
+                  borderRadius: "18px",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "16px",
-                  padding: "16px",
                 }}
               >
                 <div
                   style={{
-                    color: "#ffffff",
-                    fontSize: "15px",
-                    fontWeight: 700,
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.18em",
+                    color: "rgba(255,255,255,0.42)",
                     marginBottom: "8px",
                   }}
                 >
-                  Как работает отслеживание
+                  Access
                 </div>
                 <div
                   style={{
-                    color: "rgba(255,255,255,0.72)",
+                    color: "#ffffff",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Номер заказа и код доступа
+                </div>
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
                     fontSize: "14px",
                     lineHeight: 1.7,
                   }}
                 >
-                  После оформления заказа ему присваивается номер и код доступа. По ним можно открыть карточку заказа и посмотреть текущий статус и историю обновлений.
+                  Каждый заказ открывается по номеру и коду доступа. Это помогает быстро получить нужную информацию и сохраняет контроль над деталями заказа.
                 </div>
               </div>
 
               <div
                 style={{
-                  background: "rgba(255,255,255,0.03)",
+                  padding: "18px",
+                  borderRadius: "18px",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "16px",
-                  padding: "16px",
                 }}
               >
                 <div
                   style={{
-                    color: "#ffffff",
-                    fontSize: "15px",
-                    fontWeight: 700,
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.18em",
+                    color: "rgba(255,255,255,0.42)",
                     marginBottom: "8px",
                   }}
                 >
-                  Если статус не меняется
+                  Timing
                 </div>
                 <div
                   style={{
-                    color: "rgba(255,255,255,0.72)",
+                    color: "#ffffff",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Если обновлений долго нет
+                </div>
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
                     fontSize: "14px",
                     lineHeight: 1.7,
                   }}
                 >
-                  Небольшие паузы между этапами логистики бывают нормой. Если прошло много времени без обновлений, лучше сразу написать в службу заботы.
+                  Небольшие паузы между этапами логистики бывают нормой. Если статус долго не меняется, лучше сразу написать в службу заботы и уточнить детали.
                 </div>
               </div>
 
               <div
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "16px",
-                  padding: "16px",
+                  padding: "18px",
+                  borderRadius: "18px",
+                  background:
+                    "linear-gradient(180deg, rgba(19,231,161,0.07) 0%, rgba(255,255,255,0.02) 100%)",
+                  border: "1px solid rgba(19,231,161,0.12)",
                 }}
               >
                 <div
                   style={{
+                    fontSize: "12px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.18em",
+                    color: "rgba(255,255,255,0.42)",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Support
+                </div>
+                <div
+                  style={{
                     color: "#ffffff",
-                    fontSize: "15px",
+                    fontSize: "16px",
                     fontWeight: 700,
                     marginBottom: "8px",
+                    lineHeight: 1.35,
                   }}
                 >
                   Как получить ответ быстрее
                 </div>
                 <div
                   style={{
-                    color: "rgba(255,255,255,0.72)",
+                    color: "rgba(255,255,255,0.7)",
                     fontSize: "14px",
                     lineHeight: 1.7,
                   }}
                 >
-                  Когда пишешь в поддержку, сразу укажи номер заказа и коротко опиши вопрос. Так менеджер быстрее сориентируется и даст точный ответ.
+                  Когда пишешь в поддержку, сразу укажи номер заказа и коротко опиши вопрос. Так менеджер быстрее найдёт заказ и даст точный ответ.
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div style={cardStyle}>
+        {/* CARE */}
+        <div
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(18,19,22,1) 0%, rgba(12,13,15,1) 100%)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "28px",
+            padding: "22px",
+            boxShadow:
+              "0 0 0 1px rgba(255,255,255,0.02) inset, 0 20px 60px rgba(0,0,0,0.32)",
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -930,13 +1158,13 @@ export default function Home() {
           >
             <div
               style={{
-                color: "rgba(255,255,255,0.42)",
                 fontSize: "11px",
-                letterSpacing: "0.24em",
                 textTransform: "uppercase",
+                letterSpacing: "0.24em",
+                color: "rgba(255,255,255,0.42)",
               }}
             >
-              Связь
+              Care
             </div>
 
             <div
@@ -945,7 +1173,7 @@ export default function Home() {
                 borderRadius: "999px",
                 background: "rgba(19,231,161,0.12)",
                 border: "1px solid rgba(19,231,161,0.25)",
-                color: "#5dffba",
+                color: "#6EF0C2",
                 fontSize: "13px",
                 fontWeight: 700,
               }}
@@ -959,8 +1187,8 @@ export default function Home() {
               color: "#ffffff",
               fontSize: "28px",
               fontWeight: 700,
+              letterSpacing: "-0.03em",
               marginBottom: "14px",
-              letterSpacing: "-0.02em",
             }}
           >
             Служба заботы
@@ -971,10 +1199,10 @@ export default function Home() {
               color: "rgba(255,255,255,0.72)",
               fontSize: "15px",
               lineHeight: 1.7,
-              marginBottom: "22px",
+              marginBottom: "20px",
             }}
           >
-            Если появились вопросы по заказу, срокам или доставке, можно сразу написать в Telegram.
+            Если появились вопросы по срокам, доставке или этапам заказа, можно сразу написать в Telegram.
           </div>
 
           <a
@@ -986,7 +1214,7 @@ export default function Home() {
               width: "100%",
               boxSizing: "border-box",
               textAlign: "center",
-              background: "#13e7a1",
+              background: "#13E7A1",
               color: "#000000",
               padding: "18px",
               borderRadius: "18px",
