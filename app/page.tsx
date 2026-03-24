@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 declare global {
   interface Window {
@@ -53,8 +53,8 @@ const faqItems = [
 ]
 
 function getStatusIndex(status: string) {
-  const index = steps.findIndex((step) => step.key === status)
-  return index === -1 ? 0 : index
+  const idx = steps.findIndex((step) => step.key === status)
+  return idx === -1 ? 0 : idx
 }
 
 function formatDateTime(value: string) {
@@ -69,27 +69,27 @@ function getStatusStyles(status: string) {
   switch (status) {
     case "bought_out":
       return {
-        bg: "rgba(255, 216, 104, 0.10)",
-        border: "1px solid rgba(255, 216, 104, 0.20)",
-        color: "#F7D977",
+        bg: "rgba(255, 214, 10, 0.10)",
+        border: "1px solid rgba(255, 214, 10, 0.22)",
+        color: "#F8D86A",
       }
     case "to_china_warehouse":
       return {
-        bg: "rgba(112, 174, 255, 0.12)",
-        border: "1px solid rgba(112, 174, 255, 0.20)",
-        color: "#9DCCFF",
+        bg: "rgba(93, 162, 255, 0.12)",
+        border: "1px solid rgba(93, 162, 255, 0.20)",
+        color: "#9FCBFF",
       }
     case "to_novosibirsk":
       return {
         bg: "rgba(84, 226, 176, 0.12)",
         border: "1px solid rgba(84, 226, 176, 0.20)",
-        color: "#7AF0C7",
+        color: "#84F2CB",
       }
     case "delivered":
       return {
         bg: "rgba(84, 226, 176, 0.15)",
         border: "1px solid rgba(84, 226, 176, 0.25)",
-        color: "#86F5D0",
+        color: "#92F7D4",
       }
     default:
       return {
@@ -217,37 +217,47 @@ export default function Home() {
   const progressPercent =
     steps.length > 1 ? `${(currentStatusIndex / (steps.length - 1)) * 100}%` : "0%"
   const statusStyles = getStatusStyles(currentStatus)
-  const lastEvent = events.length ? events[events.length - 1] : null
+
+  const lastEvent = useMemo(() => {
+    if (!events.length) return null
+    return events[events.length - 1]
+  }, [events])
+
+  const cardBase = {
+    borderRadius: "30px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(18,19,22,0.96) 0%, rgba(11,12,14,0.98) 100%)",
+    boxShadow:
+      "0 24px 80px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)",
+  } as const
+
+  const innerCard = {
+    borderRadius: "22px",
+    border: "1px solid rgba(255,255,255,0.06)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%)",
+  } as const
 
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(180deg, #060606 0%, #0B0B0C 34%, #080809 100%)",
-        fontFamily: "Inter, Arial, sans-serif",
+          "linear-gradient(180deg, #050506 0%, #090A0C 28%, #060708 100%)",
         color: "#ffffff",
+        fontFamily: "Inter, Arial, sans-serif",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* background layers */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at 10% 0%, rgba(255,255,255,0.05) 0%, transparent 28%), radial-gradient(circle at 100% 10%, rgba(84,226,176,0.10) 0%, transparent 24%), radial-gradient(circle at 50% 100%, rgba(120,120,255,0.06) 0%, transparent 28%)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 16%, transparent 84%, rgba(255,255,255,0.01) 100%)",
+            "radial-gradient(circle at 18% 0%, rgba(255,255,255,0.06) 0%, transparent 28%), radial-gradient(circle at 100% 0%, rgba(84,226,176,0.10) 0%, transparent 24%), radial-gradient(circle at 50% 100%, rgba(93,162,255,0.06) 0%, transparent 24%)",
         }}
       />
 
@@ -260,47 +270,39 @@ export default function Home() {
           padding: "24px 12px 56px",
         }}
       >
-        {/* HERO / SEARCH */}
+        {/* HERO */}
         <section
           style={{
-            position: "relative",
-            marginBottom: "20px",
-            borderRadius: "32px",
+            ...cardBase,
             overflow: "hidden",
-            background:
-              "linear-gradient(145deg, rgba(19,20,22,0.98) 0%, rgba(11,12,13,0.98) 55%, rgba(8,8,9,0.98) 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow:
-              "0 20px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04)",
+            marginBottom: "20px",
+            position: "relative",
           }}
         >
           <div
             style={{
               position: "absolute",
-              top: "-80px",
-              right: "-40px",
-              width: "220px",
-              height: "220px",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(84,226,176,0.18) 0%, transparent 62%)",
-              filter: "blur(10px)",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 32%, transparent 100%)",
               pointerEvents: "none",
             }}
           />
           <div
             style={{
               position: "absolute",
-              left: "-60px",
-              bottom: "-80px",
-              width: "200px",
-              height: "200px",
+              top: "-90px",
+              right: "-60px",
+              width: "240px",
+              height: "240px",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 64%)",
+              background: "radial-gradient(circle, rgba(84,226,176,0.20) 0%, transparent 62%)",
+              filter: "blur(8px)",
               pointerEvents: "none",
             }}
           />
 
-          <div style={{ padding: "28px 24px 24px" }}>
+          <div style={{ padding: "28px 24px 24px", position: "relative", zIndex: 1 }}>
             <div
               style={{
                 display: "inline-flex",
@@ -318,15 +320,15 @@ export default function Home() {
                   width: "6px",
                   height: "6px",
                   borderRadius: "50%",
-                  background: "#6EF0C2",
-                  boxShadow: "0 0 14px rgba(110,240,194,0.6)",
+                  background: "#84F2CB",
+                  boxShadow: "0 0 16px rgba(132,242,203,0.65)",
                 }}
               />
               <span
                 style={{
                   fontSize: "11px",
-                  letterSpacing: "0.22em",
                   textTransform: "uppercase",
+                  letterSpacing: "0.24em",
                   color: "rgba(255,255,255,0.58)",
                 }}
               >
@@ -334,40 +336,79 @@ export default function Home() {
               </span>
             </div>
 
-            <h1
-              style={{
-                margin: "0 0 12px 0",
-                fontSize: "40px",
-                lineHeight: 0.95,
-                letterSpacing: "-0.06em",
-                fontWeight: 800,
-                maxWidth: "300px",
-              }}
-            >
-              Заказ
-              <br />
-              под контролем
-            </h1>
-
-            <p
-              style={{
-                margin: "0 0 22px 0",
-                fontSize: "15px",
-                lineHeight: 1.7,
-                color: "rgba(255,255,255,0.72)",
-                maxWidth: "330px",
-              }}
-            >
-              Статус, этапы, история и уведомления в одном аккуратном интерфейсе — без лишнего шума.
-            </p>
-
             <div
               style={{
                 display: "grid",
-                gap: "10px",
-                marginBottom: "14px",
+                gridTemplateColumns: "1fr 84px",
+                gap: "16px",
+                alignItems: "start",
+                marginBottom: "18px",
               }}
             >
+              <div>
+                <h1
+                  style={{
+                    margin: "0 0 12px 0",
+                    fontSize: "40px",
+                    lineHeight: 0.94,
+                    letterSpacing: "-0.06em",
+                    fontWeight: 800,
+                  }}
+                >
+                  Order
+                  <br />
+                  Control
+                </h1>
+
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "15px",
+                    lineHeight: 1.72,
+                    color: "rgba(255,255,255,0.72)",
+                    maxWidth: "320px",
+                  }}
+                >
+                  Статус, история, прогресс и уведомления в одном аккуратном интерфейсе.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  height: "84px",
+                  borderRadius: "24px",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(255,255,255,0.04)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.42)",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Live
+                </div>
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    background: "#84F2CB",
+                    boxShadow: "0 0 20px rgba(132,242,203,0.58)",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: "10px", marginBottom: "14px" }}>
               <input
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
@@ -412,12 +453,11 @@ export default function Home() {
                   padding: "17px",
                   borderRadius: "18px",
                   border: "none",
-                  background: "#F4F4F4",
+                  background: "#F3F3F3",
                   color: "#000000",
                   fontSize: "17px",
                   fontWeight: 700,
                   cursor: "pointer",
-                  letterSpacing: "-0.01em",
                   marginTop: "2px",
                 }}
               >
@@ -428,20 +468,19 @@ export default function Home() {
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
                 gap: "8px",
-                marginTop: "10px",
+                flexWrap: "wrap",
               }}
             >
-              {["Прозрачный статус", "История этапов", "Уведомления"].map((item) => (
+              {["Прозрачность", "Контроль", "История"].map((item) => (
                 <div
                   key={item}
                   style={{
                     padding: "8px 12px",
                     borderRadius: "999px",
-                    background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.62)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "rgba(255,255,255,0.58)",
                     fontSize: "12px",
                   }}
                 >
@@ -456,7 +495,7 @@ export default function Home() {
                   marginTop: "14px",
                   fontSize: "14px",
                   fontWeight: 600,
-                  color: "#ff6f6f",
+                  color: "#ff7373",
                 }}
               >
                 {error}
@@ -465,28 +504,53 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOUND ORDER */}
-        {order && (
+        {/* LOADING CARD */}
+        {loading && (
+          <section
+            style={{
+              ...cardBase,
+              padding: "22px",
+              marginBottom: "20px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "24px",
+                fontWeight: 700,
+                letterSpacing: "-0.04em",
+                marginBottom: "10px",
+              }}
+            >
+              Ищем заказ
+            </div>
+            <div
+              style={{
+                fontSize: "15px",
+                lineHeight: 1.7,
+                color: "rgba(255,255,255,0.68)",
+              }}
+            >
+              Проверяем номер заказа и код доступа. Это займёт пару секунд.
+            </div>
+          </section>
+        )}
+
+        {/* ORDER */}
+        {order && !loading && (
           <>
             <section
               style={{
-                marginBottom: "20px",
-                borderRadius: "32px",
+                ...cardBase,
                 overflow: "hidden",
-                background:
-                  "linear-gradient(145deg, rgba(20,21,23,0.98) 0%, rgba(10,11,12,0.98) 100%)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow:
-                  "0 18px 60px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)",
+                marginBottom: "20px",
               }}
             >
-              {/* top status band */}
               <div
                 style={{
                   padding: "22px 22px 16px",
                   borderBottom: "1px solid rgba(255,255,255,0.06)",
                   background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
+                    "linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)",
                 }}
               >
                 <div
@@ -545,15 +609,14 @@ export default function Home() {
                       flexDirection: "column",
                       justifyContent: "center",
                       alignItems: "center",
-                      textAlign: "center",
                     }}
                   >
                     <div
                       style={{
-                        fontSize: "11px",
-                        color: "rgba(255,255,255,0.4)",
-                        textTransform: "uppercase",
+                        fontSize: "10px",
                         letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: "rgba(255,255,255,0.42)",
                         marginBottom: "6px",
                       }}
                     >
@@ -562,8 +625,8 @@ export default function Home() {
                     <div
                       style={{
                         fontSize: "26px",
-                        fontWeight: 800,
                         lineHeight: 1,
+                        fontWeight: 800,
                       }}
                     >
                       {currentStatusIndex + 1}
@@ -581,7 +644,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* main content */}
               <div style={{ padding: "20px 22px 22px" }}>
                 <div
                   style={{
@@ -609,8 +671,8 @@ export default function Home() {
                   {lastEvent?.created_at && (
                     <div
                       style={{
-                        color: "rgba(255,255,255,0.48)",
                         fontSize: "13px",
+                        color: "rgba(255,255,255,0.46)",
                       }}
                     >
                       {formatDateTime(lastEvent.created_at)}
@@ -618,40 +680,102 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* redesigned progress panel */}
+                {/* NEW MAIN STATUS PANEL */}
                 <div
                   style={{
-                    marginBottom: "16px",
+                    ...innerCard,
                     padding: "18px",
-                    borderRadius: "24px",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    marginBottom: "16px",
                   }}
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "12px",
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto",
+                      gap: "14px",
+                      alignItems: "end",
+                      marginBottom: "14px",
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: "15px",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Маршрут заказа
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "rgba(255,255,255,0.42)",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Current status
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "28px",
+                          lineHeight: 1.05,
+                          letterSpacing: "-0.05em",
+                          fontWeight: 800,
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {currentStatusLabel}
+                      </div>
+                      <div
+                        style={{
+                          color: "rgba(255,255,255,0.68)",
+                          fontSize: "14px",
+                          lineHeight: 1.7,
+                          maxWidth: "240px",
+                        }}
+                      >
+                        {currentStatus === "created" &&
+                          "Заказ оформлен и зафиксирован в системе. Следующий этап — выкуп товара."}
+                        {currentStatus === "bought_out" &&
+                          "Товар уже выкуплен у поставщика и движется к следующему этапу маршрута."}
+                        {currentStatus === "to_china_warehouse" &&
+                          "Товар находится на нашем складе в Китае и готовится к отправке дальше."}
+                        {currentStatus === "to_novosibirsk" &&
+                          "Заказ уже покинул Китай и находится в пути к нам в Новосибирск."}
+                        {currentStatus === "delivered" &&
+                          "Заказ уже прибыл в Новосибирск. Менеджер скоро свяжется с вами по дальнейшим действиям."}
+                      </div>
                     </div>
+
                     <div
                       style={{
-                        fontSize: "12px",
-                        color: "rgba(255,255,255,0.48)",
+                        width: "84px",
+                        height: "84px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      {Math.round((currentStatusIndex / (steps.length - 1)) * 100)}%
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: "rgba(255,255,255,0.42)",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Progress
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "24px",
+                          lineHeight: 1,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {Math.round((currentStatusIndex / (steps.length - 1)) * 100)}%
+                      </div>
                     </div>
                   </div>
 
@@ -672,7 +796,7 @@ export default function Home() {
                         width: progressPercent,
                         borderRadius: "999px",
                         background:
-                          "linear-gradient(90deg, #8CF6D4 0%, #55E2B0 52%, #2EC995 100%)",
+                          "linear-gradient(90deg, #9AF8DA 0%, #64E7B9 55%, #37CA98 100%)",
                         boxShadow: "0 0 24px rgba(84,226,176,0.35)",
                       }}
                     />
@@ -681,7 +805,8 @@ export default function Home() {
                   <div
                     style={{
                       display: "grid",
-                      gap: "10px",
+                      gridTemplateColumns: "repeat(5, 1fr)",
+                      gap: "8px",
                     }}
                   >
                     {steps.map((step, index) => {
@@ -692,52 +817,40 @@ export default function Home() {
                         <div
                           key={step.key}
                           style={{
-                            display: "grid",
-                            gridTemplateColumns: "18px 1fr auto",
+                            display: "flex",
+                            flexDirection: "column",
                             alignItems: "center",
-                            gap: "12px",
-                            padding: "10px 0",
+                            gap: "8px",
                           }}
                         >
                           <div
                             style={{
-                              width: "14px",
-                              height: "14px",
+                              width: active ? "14px" : "10px",
+                              height: active ? "14px" : "10px",
                               borderRadius: "50%",
                               background: active
-                                ? "#55E2B0"
+                                ? "#84F2CB"
                                 : completed
-                                ? "rgba(84,226,176,0.55)"
+                                ? "rgba(132,242,203,0.55)"
                                 : "rgba(255,255,255,0.14)",
                               boxShadow: active
-                                ? "0 0 0 6px rgba(84,226,176,0.12)"
+                                ? "0 0 0 6px rgba(132,242,203,0.12)"
                                 : "none",
                             }}
                           />
                           <div
                             style={{
-                              fontSize: "14px",
-                              fontWeight: active ? 700 : 500,
+                              textAlign: "center",
+                              fontSize: "10px",
+                              lineHeight: 1.35,
                               color: active
                                 ? "#ffffff"
                                 : completed
-                                ? "rgba(255,255,255,0.76)"
-                                : "rgba(255,255,255,0.38)",
+                                ? "rgba(255,255,255,0.72)"
+                                : "rgba(255,255,255,0.36)",
                             }}
                           >
                             {step.label}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "11px",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.16em",
-                              color: active
-                                ? "rgba(84,226,176,0.92)"
-                                : "rgba(255,255,255,0.28)",
-                            }}
-                          >
-                            {active ? "Now" : completed ? "Done" : ""}
                           </div>
                         </div>
                       )
@@ -745,7 +858,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* meta cards */}
                 <div
                   style={{
                     display: "grid",
@@ -756,10 +868,8 @@ export default function Home() {
                 >
                   <div
                     style={{
+                      ...innerCard,
                       padding: "16px",
-                      borderRadius: "20px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
                     }}
                   >
                     <div
@@ -776,8 +886,8 @@ export default function Home() {
                     <div
                       style={{
                         fontSize: "15px",
-                        lineHeight: 1.5,
                         color: "#ffffff",
+                        lineHeight: 1.5,
                       }}
                     >
                       {order.client_name || "—"}
@@ -786,10 +896,8 @@ export default function Home() {
 
                   <div
                     style={{
+                      ...innerCard,
                       padding: "16px",
-                      borderRadius: "20px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.06)",
                     }}
                   >
                     <div
@@ -806,8 +914,8 @@ export default function Home() {
                     <div
                       style={{
                         fontSize: "15px",
-                        lineHeight: 1.5,
                         color: "#ffffff",
+                        lineHeight: 1.5,
                       }}
                     >
                       {order.size || "—"}
@@ -838,7 +946,7 @@ export default function Home() {
                       marginTop: "12px",
                       fontSize: "14px",
                       fontWeight: 600,
-                      color: "#76F2CB",
+                      color: "#84F2CB",
                     }}
                   >
                     {bindMessage}
@@ -850,14 +958,9 @@ export default function Home() {
             {/* HISTORY */}
             <section
               style={{
-                marginBottom: "20px",
-                borderRadius: "32px",
+                ...cardBase,
                 overflow: "hidden",
-                background:
-                  "linear-gradient(145deg, rgba(19,20,22,0.98) 0%, rgba(10,11,12,0.98) 100%)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow:
-                  "0 18px 60px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)",
+                marginBottom: "20px",
               }}
             >
               <div
@@ -880,7 +983,7 @@ export default function Home() {
                       letterSpacing: "-0.04em",
                     }}
                   >
-                    Журнал движения
+                    История заказа
                   </div>
 
                   <div
@@ -896,76 +999,111 @@ export default function Home() {
 
               <div style={{ padding: "18px 22px 22px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {events.map((event: any, index: number) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "20px 1fr",
-                        gap: "14px",
-                      }}
-                    >
+                  {events.map((event: any, index: number) => {
+                    const isLast = index === events.length - 1
+
+                    return (
                       <div
+                        key={index}
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
+                          display: "grid",
+                          gridTemplateColumns: "20px 1fr",
+                          gap: "14px",
                         }}
                       >
                         <div
                           style={{
-                            width: "12px",
-                            height: "12px",
-                            borderRadius: "50%",
-                            background: "#55E2B0",
-                            marginTop: "6px",
-                            boxShadow: "0 0 0 5px rgba(84,226,176,0.12)",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
                           }}
-                        />
-                        {index !== events.length - 1 && (
+                        >
                           <div
                             style={{
-                              width: "2px",
-                              flex: 1,
-                              minHeight: "44px",
-                              background: "rgba(255,255,255,0.10)",
-                              marginTop: "8px",
+                              width: "12px",
+                              height: "12px",
+                              borderRadius: "50%",
+                              background: isLast ? "#84F2CB" : "rgba(132,242,203,0.75)",
+                              marginTop: "6px",
+                              boxShadow: isLast
+                                ? "0 0 0 5px rgba(132,242,203,0.12)"
+                                : "none",
                             }}
                           />
-                        )}
-                      </div>
-
-                      <div
-                        style={{
-                          padding: "16px",
-                          borderRadius: "20px",
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                          border: "1px solid rgba(255,255,255,0.06)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "15px",
-                            fontWeight: 700,
-                            lineHeight: 1.45,
-                            marginBottom: "6px",
-                          }}
-                        >
-                          {event.comment || statusMap[event.status] || event.status}
+                          {index !== events.length - 1 && (
+                            <div
+                              style={{
+                                width: "2px",
+                                flex: 1,
+                                minHeight: "44px",
+                                background: "rgba(255,255,255,0.10)",
+                                marginTop: "8px",
+                              }}
+                            />
+                          )}
                         </div>
 
                         <div
                           style={{
-                            fontSize: "13px",
-                            color: "rgba(255,255,255,0.46)",
+                            padding: "16px",
+                            borderRadius: "20px",
+                            background: isLast
+                              ? "linear-gradient(180deg, rgba(84,226,176,0.08) 0%, rgba(255,255,255,0.02) 100%)"
+                              : "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
+                            border: isLast
+                              ? "1px solid rgba(84,226,176,0.12)"
+                              : "1px solid rgba(255,255,255,0.06)",
                           }}
                         >
-                          {formatDateTime(event.created_at)}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              marginBottom: "6px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "15px",
+                                fontWeight: 700,
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              {event.comment || statusMap[event.status] || event.status}
+                            </div>
+
+                            {isLast && (
+                              <div
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  background: "rgba(84,226,176,0.12)",
+                                  border: "1px solid rgba(84,226,176,0.18)",
+                                  color: "#84F2CB",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                Current
+                              </div>
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "rgba(255,255,255,0.46)",
+                            }}
+                          >
+                            {formatDateTime(event.created_at)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </section>
@@ -975,14 +1113,9 @@ export default function Home() {
         {/* KNOWLEDGE */}
         <section
           style={{
-            marginBottom: "20px",
-            borderRadius: "32px",
+            ...cardBase,
             overflow: "hidden",
-            background:
-              "linear-gradient(145deg, rgba(19,20,22,0.98) 0%, rgba(10,11,12,0.98) 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow:
-              "0 18px 60px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)",
+            marginBottom: "20px",
           }}
         >
           <div
@@ -1015,14 +1148,10 @@ export default function Home() {
           </div>
 
           <div style={{ padding: "18px 22px 22px" }}>
-            {/* FAQ */}
             <div
               style={{
+                ...innerCard,
                 padding: "14px",
-                borderRadius: "24px",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(255,255,255,0.06)",
                 marginBottom: "12px",
               }}
             >
@@ -1108,14 +1237,10 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Reviews */}
             <div
               style={{
+                ...innerCard,
                 padding: "18px",
-                borderRadius: "24px",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(255,255,255,0.06)",
                 marginBottom: "12px",
               }}
             >
@@ -1163,13 +1288,7 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Useful info */}
-            <div
-              style={{
-                display: "grid",
-                gap: "10px",
-              }}
-            >
+            <div style={{ display: "grid", gap: "10px" }}>
               {[
                 {
                   label: "Access",
@@ -1179,7 +1298,7 @@ export default function Home() {
                 },
                 {
                   label: "Timing",
-                  title: "Если статус не меняется",
+                  title: "Если статус долго не меняется",
                   text:
                     "Небольшие паузы между этапами логистики бывают нормой. Если обновлений долго нет, лучше сразу написать в службу заботы и уточнить детали.",
                 },
@@ -1243,23 +1362,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* SUPPORT */}
+        {/* CARE */}
         <section
           style={{
-            borderRadius: "32px",
+            ...cardBase,
             overflow: "hidden",
-            background:
-              "linear-gradient(145deg, rgba(19,20,22,0.98) 0%, rgba(10,11,12,0.98) 100%)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow:
-              "0 18px 60px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)",
           }}
         >
-          <div
-            style={{
-              padding: "22px",
-            }}
-          >
+          <div style={{ padding: "22px" }}>
             <div
               style={{
                 display: "flex",
@@ -1285,7 +1395,7 @@ export default function Home() {
                   borderRadius: "999px",
                   background: "rgba(84,226,176,0.12)",
                   border: "1px solid rgba(84,226,176,0.22)",
-                  color: "#7AF0C7",
+                  color: "#84F2CB",
                   fontSize: "13px",
                   fontWeight: 700,
                 }}
@@ -1297,7 +1407,7 @@ export default function Home() {
             <div
               style={{
                 fontSize: "30px",
-                lineHeight: 1.05,
+                lineHeight: 1.04,
                 letterSpacing: "-0.05em",
                 fontWeight: 800,
                 marginBottom: "12px",
