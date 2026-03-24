@@ -44,6 +44,34 @@ const statusBadgeStyles: Record<string, { bg: string; border: string; color: str
   },
 }
 
+const faqItems = [
+  {
+    question: "Сколько в среднем идёт доставка?",
+    answer:
+      "🚚 Обычно доставка занимает 15 дней ± до нас в Новосибирск с момента поступления на наш склад в Китае.",
+  },
+  {
+    question: "Что значит статус «Выкуплен»?",
+    answer:
+      "Это значит, что мы выкупили вашу вещь у поставщика и теперь она направляется на наш склад.",
+  },
+  {
+    question: "Что значит статус «На складе в Китае»?",
+    answer:
+      "Это значит, что товар уже выкуплен и сейчас находится на нашем складе в Китае, чтобы дальше отправиться по маршруту.",
+  },
+  {
+    question: "Что значит статус «Едет в Новосибирск»?",
+    answer:
+      "🌍 Это значит, что товар уже отправился с нашего склада в Китае и находится в пути к нам в РФ, в Новосибирск.",
+  },
+  {
+    question: "Что значит статус «Доставлен»?",
+    answer:
+      "✅ Это значит, что товар уже приехал к нам в Новосибирск. По приезде менеджер вам отпишет и сделает видеообзор вашей вещи 😉",
+  },
+]
+
 export default function Home() {
   const [orderNumber, setOrderNumber] = useState("")
   const [accessCode, setAccessCode] = useState("")
@@ -52,6 +80,7 @@ export default function Home() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [bindMessage, setBindMessage] = useState("")
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
   async function searchOrder() {
     const trimmedOrderNumber = orderNumber.trim()
@@ -535,71 +564,89 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ ...softCardStyle, marginBottom: "12px" }}>
+          <div style={{ ...softCardStyle, marginBottom: "12px", padding: "14px" }}>
             <div
               style={{
                 color: "#ffffff",
                 fontSize: "16px",
                 fontWeight: 700,
-                marginBottom: "14px",
+                marginBottom: "10px",
+                padding: "6px 6px 2px",
               }}
             >
               FAQ
             </div>
 
-            <div
-              style={{
-                color: "rgba(255,255,255,0.72)",
-                fontSize: "15px",
-                lineHeight: 1.7,
-                display: "grid",
-                gap: "18px",
-              }}
-            >
-              <div>
-                <div style={{ color: "#ffffff", fontWeight: 700, marginBottom: "6px" }}>
-                  1. Сколько в среднем идёт доставка?
-                </div>
-                <div>
-                  🚚 Обычно доставка занимает 15 дней ± до нас в Новосибирск с момента поступления на наш склад в Китае.
-                </div>
-              </div>
+            <div style={{ display: "grid", gap: "10px" }}>
+              {faqItems.map((item, index) => {
+                const isOpen = openFaqIndex === index
 
-              <div>
-                <div style={{ color: "#ffffff", fontWeight: 700, marginBottom: "6px" }}>
-                  2. Что значит статус «Выкуплен»?
-                </div>
-                <div>
-                  Это значит, что мы выкупили вашу вещь у поставщика и теперь она направляется на наш склад.
-                </div>
-              </div>
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <button
+                      onClick={() =>
+                        setOpenFaqIndex(isOpen ? null : index)
+                      }
+                      style={{
+                        width: "100%",
+                        background: "transparent",
+                        border: "none",
+                        color: "#ffffff",
+                        cursor: "pointer",
+                        padding: "16px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {item.question}
+                      </span>
 
-              <div>
-                <div style={{ color: "#ffffff", fontWeight: 700, marginBottom: "6px" }}>
-                  3. Что значит статус «На складе в Китае»?
-                </div>
-                <div>
-                  Это значит, что товар уже выкуплен и сейчас находится на нашем складе в Китае, чтобы дальше отправиться по маршруту.
-                </div>
-              </div>
+                      <span
+                        style={{
+                          fontSize: "18px",
+                          color: "rgba(255,255,255,0.72)",
+                          transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 0.2s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        ▾
+                      </span>
+                    </button>
 
-              <div>
-                <div style={{ color: "#ffffff", fontWeight: 700, marginBottom: "6px" }}>
-                  4. Что значит статус «Едет в Новосибирск»?
-                </div>
-                <div>
-                  🌍 Это значит, что товар уже отправился с нашего склада в Китае и находится в пути к нам в РФ, в Новосибирск.
-                </div>
-              </div>
-
-              <div>
-                <div style={{ color: "#ffffff", fontWeight: 700, marginBottom: "6px" }}>
-                  5. Что значит статус «Доставлен»?
-                </div>
-                <div>
-                  ✅ Это значит, что товар уже приехал к нам в Новосибирск. По приезде менеджер вам отпишет и сделает видеообзор вашей вещи 😉
-                </div>
-              </div>
+                    {isOpen && (
+                      <div
+                        style={{
+                          padding: "0 16px 16px 16px",
+                          color: "rgba(255,255,255,0.72)",
+                          fontSize: "15px",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
