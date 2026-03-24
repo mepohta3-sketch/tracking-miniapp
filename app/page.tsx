@@ -65,6 +65,15 @@ function formatDateTime(value: string) {
   })}`
 }
 
+function getStepWord(count: number) {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) return "этап"
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return "этапа"
+  return "этапов"
+}
+
 function getStatusStyles(status: string) {
   switch (status) {
     case "bought_out":
@@ -270,7 +279,7 @@ export default function Home() {
           padding: "24px 12px 56px",
         }}
       >
-        {/* HERO */}
+        {/* ГЛАВНЫЙ БЛОК */}
         <section
           style={{
             ...cardBase,
@@ -332,7 +341,7 @@ export default function Home() {
                   color: "rgba(255,255,255,0.58)",
                 }}
               >
-                Kai Store Tracking
+                Kai Store
               </span>
             </div>
 
@@ -355,9 +364,9 @@ export default function Home() {
                     fontWeight: 800,
                   }}
                 >
-                  Order
+                  Заказ
                   <br />
-                  Control
+                  под контролем
                 </h1>
 
                 <p
@@ -394,7 +403,7 @@ export default function Home() {
                     marginBottom: "6px",
                   }}
                 >
-                  Live
+                  Онлайн
                 </div>
                 <div
                   style={{
@@ -465,30 +474,6 @@ export default function Home() {
               </button>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              {["Прозрачность", "Контроль", "История"].map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: "999px",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    background: "rgba(255,255,255,0.03)",
-                    color: "rgba(255,255,255,0.58)",
-                    fontSize: "12px",
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-
             {error && (
               <div
                 style={{
@@ -504,7 +489,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* LOADING CARD */}
+        {/* ЗАГРУЗКА */}
         {loading && (
           <section
             style={{
@@ -535,7 +520,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* ORDER */}
+        {/* ЗАКАЗ */}
         {order && !loading && (
           <>
             <section
@@ -571,7 +556,7 @@ export default function Home() {
                         marginBottom: "8px",
                       }}
                     >
-                      Current order
+                      Текущий заказ
                     </div>
 
                     <div
@@ -620,7 +605,7 @@ export default function Home() {
                         marginBottom: "6px",
                       }}
                     >
-                      Stage
+                      Этап
                     </div>
                     <div
                       style={{
@@ -680,7 +665,6 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* NEW MAIN STATUS PANEL */}
                 <div
                   style={{
                     ...innerCard,
@@ -707,7 +691,7 @@ export default function Home() {
                           marginBottom: "8px",
                         }}
                       >
-                        Current status
+                        Текущий статус
                       </div>
                       <div
                         style={{
@@ -765,7 +749,7 @@ export default function Home() {
                           marginBottom: "6px",
                         }}
                       >
-                        Progress
+                        Прогресс
                       </div>
                       <div
                         style={{
@@ -858,71 +842,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "10px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      ...innerCard,
-                      padding: "16px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.18em",
-                        color: "rgba(255,255,255,0.42)",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      Client
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "15px",
-                        color: "#ffffff",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {order.client_name || "—"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      ...innerCard,
-                      padding: "16px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.18em",
-                        color: "rgba(255,255,255,0.42)",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      Size
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "15px",
-                        color: "#ffffff",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {order.size || "—"}
-                    </div>
-                  </div>
-                </div>
-
                 <button
                   onClick={bindNotifications}
                   style={{
@@ -955,7 +874,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* HISTORY */}
+            {/* ИСТОРИЯ */}
             <section
               style={{
                 ...cardBase,
@@ -992,7 +911,7 @@ export default function Home() {
                       color: "rgba(255,255,255,0.42)",
                     }}
                   >
-                    {events.length} этапов
+                    {events.length} {getStepWord(events.length)}
                   </div>
                 </div>
               </div>
@@ -1087,7 +1006,7 @@ export default function Home() {
                                   whiteSpace: "nowrap",
                                 }}
                               >
-                                Current
+                                Сейчас
                               </div>
                             )}
                           </div>
@@ -1110,7 +1029,7 @@ export default function Home() {
           </>
         )}
 
-        {/* KNOWLEDGE */}
+        {/* ПОЛЕЗНОЕ */}
         <section
           style={{
             ...cardBase,
@@ -1133,7 +1052,7 @@ export default function Home() {
                 marginBottom: "8px",
               }}
             >
-              Knowledge
+              Полезное
             </div>
 
             <div
@@ -1143,7 +1062,7 @@ export default function Home() {
                 letterSpacing: "-0.04em",
               }}
             >
-              Полезное
+              Информация по заказу
             </div>
           </div>
 
@@ -1291,19 +1210,16 @@ export default function Home() {
             <div style={{ display: "grid", gap: "10px" }}>
               {[
                 {
-                  label: "Access",
                   title: "Как работает отслеживание",
                   text:
                     "После оформления заказа ему присваивается номер и код доступа. По ним открывается карточка заказа с текущим статусом и историей обновлений.",
                 },
                 {
-                  label: "Timing",
                   title: "Если статус долго не меняется",
                   text:
                     "Небольшие паузы между этапами логистики бывают нормой. Если обновлений долго нет, лучше сразу написать в службу заботы и уточнить детали.",
                 },
                 {
-                  label: "Support",
                   title: "Как получить ответ быстрее",
                   text:
                     "Когда пишешь в поддержку, сразу укажи номер заказа и коротко опиши вопрос. Так менеджер быстрее найдёт заказ и даст точный ответ.",
@@ -1324,18 +1240,6 @@ export default function Home() {
                         : "1px solid rgba(255,255,255,0.06)",
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.2em",
-                      color: "rgba(255,255,255,0.42)",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {item.label}
-                  </div>
-
                   <div
                     style={{
                       fontSize: "17px",
@@ -1362,7 +1266,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CARE */}
+        {/* ПОДДЕРЖКА */}
         <section
           style={{
             ...cardBase,
@@ -1386,7 +1290,7 @@ export default function Home() {
                   color: "rgba(255,255,255,0.42)",
                 }}
               >
-                Care
+                Поддержка
               </div>
 
               <div
