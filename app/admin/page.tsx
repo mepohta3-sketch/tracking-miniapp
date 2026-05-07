@@ -232,27 +232,46 @@ export default function AdminPage() {
   return (
     <main className="adminMain">
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
+       * {
+  box-sizing: border-box;
+}
 
-        .adminMain {
-          min-height: 100vh;
-          background:
-            radial-gradient(circle at top left, rgba(19, 231, 161, 0.12), transparent 32%),
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 28%),
-            #090909;
-          color: #ffffff;
-          font-family: Arial, sans-serif;
-          padding: 32px 14px 60px;
-        }
+html,
+body {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #090909;
+}
 
-        .shell {
-          width: 100%;
-          max-width: 1180px;
-          margin: 0 auto;
-        }
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+}
 
+.adminMain {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(19, 231, 161, 0.12), transparent 32%),
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 28%),
+    #090909;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  padding: 32px 14px 60px;
+}
+
+       .shell {
+  width: 100%;
+  max-width: 1180px;
+  min-width: 0;
+  margin: 0 auto;
+}
         .top {
           display: flex;
           justify-content: space-between;
@@ -282,13 +301,16 @@ export default function AdminPage() {
           line-height: 1.5;
         }
 
-        .card {
-          background: rgba(17, 18, 20, 0.92);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 28px;
-          padding: 24px;
-          backdrop-filter: blur(14px);
-        }
+       .card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  background: rgba(17, 18, 20, 0.92);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 28px;
+  padding: 24px;
+  backdrop-filter: blur(14px);
+}
 
         .card + .card {
           margin-top: 24px;
@@ -405,15 +427,21 @@ export default function AdminPage() {
           margin-bottom: 14px;
         }
 
-        .tabs {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 18px;
-          overflow-x: auto;
-          padding-bottom: 2px;
-        }
+      .tabs {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
 
         .statusTab {
+flex: 0 0 auto;
           min-width: max-content;
           display: flex;
           align-items: center;
