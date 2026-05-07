@@ -7,7 +7,10 @@ const supabase = createClient(
 );
 
 function checkSecret(req: Request) {
-  return req.headers.get("x-admin-secret") === process.env.ADMIN_SECRET;
+  const requestSecret = String(req.headers.get("x-admin-secret") || "").trim();
+  const envSecret = String(process.env.ADMIN_SECRET || "").trim();
+
+  return requestSecret === envSecret;
 }
 
 const statusMap: Record<string, string> = {
